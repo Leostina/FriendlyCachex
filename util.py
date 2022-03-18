@@ -151,4 +151,14 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
 def process_input(json_dict):
     """process input dict read from json"""
 
-    return json_dict["n"], {(cell[1], cell[2]):cell[0] for cell in json_dict["board"]}, json_dict["start"], json_dict["goal"]
+    board_n = json_dict["n"]
+    start_board = {(cell[1], cell[2]):cell[0] for cell in json_dict["board"]}
+    start = json_dict["start"]
+    goal = json_dict["goal"]
+
+    disp_board = start_board
+    disp_board.update({tuple(start): "S",tuple(goal): "G"})
+    print_board(n=board_n, board_dict=disp_board, message=apply_ansi(
+        str("== Input processed, Starting and Goal cells are marked as S/G, enjoy! =="), True, "b"), ansi=True)
+
+    return board_n, start_board, start, goal

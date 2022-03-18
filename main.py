@@ -26,8 +26,9 @@ def main():
     print(apply_ansi("Hi Selena in RED", True, "r"))
     print(apply_ansi("Hi Selena in BLUE", True, "b"))
     
+    # given starting board config 
     board_n, start_board, start_cell, goal_cell = process_input(data)
-    print_board(n=board_n,board_dict=start_board,message= apply_ansi(str(start_board), True, "b"),ansi=True)
+    
     
     # TODO:
     # Find and print a solution to the board configuration described
