@@ -39,20 +39,12 @@ def main():
     # `print_board` helper function? (See the `util.py` source code for
     # usage information).
 
+    path = a_star(board_n, start_board, tuple(start_cell), tuple(goal_cell))
+    print(path)
 
-class Cell():
-    def __init__(self, coord=None, parent=None, g_val=0, h_val=0, f_val=0):
-        self.coord = coord
-        self.parent = parent
-        self.g_val = g_val
-        self.h_val = h_val
-        self.f_val = f_val
 
-    def __eq__(self, cell):
-        return self.coord == cell.coord
-
-def astar(map, start, goal):
-
+def a_star(n, board, start, goal):
+    print(board)
     # return index of the Cell with min f_val 
     def min_f_val(list) -> int:
         best_i = 0
@@ -65,7 +57,7 @@ def astar(map, start, goal):
         return best_i
 
     def check_valid_cell(coord, n):
-        return coord[0] > 0 and coord[1] > 0 and coord[0] < n and coord[1] < n and (coord not in map.keys())
+        return coord[0] >= 0 and coord[1] >= 0 and coord[0] < n and coord[1] < n and (coord not in board.keys())
 
     def path_backtrack(cell) -> list:
         path = []
@@ -74,12 +66,15 @@ def astar(map, start, goal):
             cell = cell.parent
         return path
 
+    def calc_heuristic(cell, goal):
+        return abs(goal.coord[0]-cell.coord[0]) + abs(goal.coord[1]-cell.coord[1])
+
+    def add_tuple(t1, t2):
+        return (t1[0]+t2[0], t1[1]+t2[1])
 
     # init
     start = Cell(coord=start)
     goal = Cell(coord=goal)
-    frontier_list = []
-    visited_list = []
     frontier, visited = [start], []
 
 
@@ -89,14 +84,41 @@ def astar(map, start, goal):
         curr_cell = frontier[curr_idx]
         visited.append(curr_cell) 
         frontier.pop(curr_idx)
-
+        
+        print(curr_cell.coord)
+        if (curr_cell.coord == (0,2)):
+            print("check")
         # goal test
         if curr_cell == goal:
-            path_backtrack(curr_cell)
+            return path_backtrack(curr_cell)
+
 
         # reachable cells
         reachable = []
         for delta in [(1,-1),(1,0),(0,1),(-1,1),(-1,0),(0,-1)]:
-            new_coord = curr_cell.coord + delta
-            if check_valid_cell(new_coord):
-                reachable.append(Cell(new_coord))
+            new_coord = add_tuple(curr_cell.coord,delta)
+            if check_valid_cell(new_coord, n):
+                reachable.append(Cell(coord=new_coord, parent=curr_cell))
+
+        # examine each reachable
+        for cell in reachable:
+
+            # if visited, pass on
+            if any(cell == v for v in visited):
+                continue
+
+            # assign g h f values
+            cell.g_val = curr_cell.g_val + 1 # one more step
+            cell.h_val = calc_heuristic(cell, goal)
+            cell.f_val = cell.g_val + cell.h_val
+
+            # if cell exists in frontier, add if new version has a better f value
+            for fid, f in enumerate(frontier):
+                if f == cell:
+                    if f.g_val < cell.g_val:
+                        continue
+                    else:
+                        frontier.pop(fid)
+            frontier.append(cell)
+        
+        print([(f.coord, f.g_val, f.h_val, f.f_val) for f in frontier])
