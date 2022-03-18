@@ -8,6 +8,8 @@ This script contains the entry point to the program (the code in
 
 import sys
 import json
+from typing import List
+from numpy import fromiter
 
 from sympy import true
 
@@ -36,3 +38,65 @@ def main():
     # Why not start by trying to print this configuration out using the
     # `print_board` helper function? (See the `util.py` source code for
     # usage information).
+
+
+class Cell():
+    def __init__(self, coord=None, parent=None, g_val=0, h_val=0, f_val=0):
+        self.coord = coord
+        self.parent = parent
+        self.g_val = g_val
+        self.h_val = h_val
+        self.f_val = f_val
+
+    def __eq__(self, cell):
+        return self.coord == cell.coord
+
+def astar(map, start, goal):
+
+    # return index of the Cell with min f_val 
+    def min_f_val(list) -> int:
+        best_i = 0
+        best_val = list[0].f_val
+        for i in range(len(list)):
+            val = list[i].f_val
+            if val < best_val:
+                best_val = val
+                best_i = i
+        return best_i
+
+    def check_valid_cell(coord, n):
+        return coord[0] > 0 and coord[1] > 0 and coord[0] < n and coord[1] < n and (coord not in map.keys())
+
+    def path_backtrack(cell) -> list:
+        path = []
+        while(cell):
+            path.insert(0, cell.coord)
+            cell = cell.parent
+        return path
+
+
+    # init
+    start = Cell(coord=start)
+    goal = Cell(coord=goal)
+    frontier_list = []
+    visited_list = []
+    frontier, visited = [start], []
+
+
+    while (len(frontier) > 0):
+        # find and move to the best cell with min f_val in the frontier
+        curr_idx = min_f_val(frontier)
+        curr_cell = frontier[curr_idx]
+        visited.append(curr_cell) 
+        frontier.pop(curr_idx)
+
+        # goal test
+        if curr_cell == goal:
+            path_backtrack(curr_cell)
+
+        # reachable cells
+        reachable = []
+        for delta in [(1,-1),(1,0),(0,1),(-1,1),(-1,0),(0,-1)]:
+            new_coord = curr_cell.coord + delta
+            if check_valid_cell(new_coord):
+                reachable.append(Cell(new_coord))
