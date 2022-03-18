@@ -146,3 +146,9 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
 
     # Print to terminal (with optional args forwarded)
     print(output, **kwargs)
+
+
+def process_input(json_dict):
+    """process input dict read from json"""
+
+    return json_dict["n"], {(cell[1], cell[2]):cell[0] for cell in json_dict["board"]}, json_dict["start"], json_dict["goal"]
