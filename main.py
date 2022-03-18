@@ -40,11 +40,12 @@ def main():
     # usage information).
 
     path = a_star(board_n, start_board, tuple(start_cell), tuple(goal_cell))
-    print(path)
+    print(len(path))
+    [print(p) for p in path]
+
 
 
 def a_star(n, board, start, goal):
-    print(board)
     # return index of the Cell with min f_val 
     def min_f_val(list) -> int:
         best_i = 0
@@ -85,9 +86,6 @@ def a_star(n, board, start, goal):
         visited.append(curr_cell) 
         frontier.pop(curr_idx)
         
-        print(curr_cell.coord)
-        if (curr_cell.coord == (0,2)):
-            print("check")
         # goal test
         if curr_cell == goal:
             return path_backtrack(curr_cell)
@@ -113,12 +111,13 @@ def a_star(n, board, start, goal):
             cell.f_val = cell.g_val + cell.h_val
 
             # if cell exists in frontier, add if new version has a better f value
+            add = True
             for fid, f in enumerate(frontier):
                 if f == cell:
                     if f.g_val < cell.g_val:
-                        continue
+                        add = False
+                        break
                     else:
                         frontier.pop(fid)
-            frontier.append(cell)
-        
-        print([(f.coord, f.g_val, f.h_val, f.f_val) for f in frontier])
+            if add:
+                frontier.append(cell)

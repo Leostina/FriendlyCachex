@@ -7,6 +7,24 @@ Feel free to use and/or modify them to help you develop your program.
 """
 
 from itertools import islice
+from this import d
+
+# a cell
+class Cell():
+    def __init__(self, coord=None, parent=None, g_val=0, h_val=0, f_val=0):
+        self.coord = coord
+        self.parent = parent
+        self.g_val = g_val
+        self.h_val = h_val
+        self.f_val = f_val
+
+    def __eq__(self, cell):
+        return self.coord == cell.coord
+
+    def __str__(self):
+        return "Coord: {}, Parent: {}, g: {}, h: {}, f: {}".format(self.coord, self.parent, self.g_val, self.h_val, self.f_val)
+
+
 
 def apply_ansi(str, bold=True, color=None):
     """
@@ -156,7 +174,7 @@ def process_input(json_dict):
     start = json_dict["start"]
     goal = json_dict["goal"]
 
-    disp_board = start_board
+    disp_board = start_board.copy()
     disp_board.update({tuple(start): "S",tuple(goal): "G"})
     print_board(n=board_n, board_dict=disp_board, message=apply_ansi(
         str("== Input processed, Starting and Goal cells are marked as S/G, enjoy! =="), True, "b"), ansi=True)
