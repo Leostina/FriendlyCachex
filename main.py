@@ -12,7 +12,7 @@ import json
 # If you want to separate your code into separate files, put them
 # inside the `search` directory (like this one and `util.py`) and
 # then import from them like this:
-from search.util import print_board, print_coordinate
+from util import print_board, print_coordinate
 
 def main():
     try:
@@ -21,6 +21,7 @@ def main():
     except IndexError:
         print("usage: python3 -m search path/to/input.json", file=sys.stderr)
         sys.exit(1)
+    print(type(data))
 
     # TODO:
     # Find and print a solution to the board configuration described
