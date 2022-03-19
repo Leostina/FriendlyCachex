@@ -4,7 +4,7 @@
 
 # Run & Debug
 ### Path Finding
-Members are expected to execute using\
+Members are expected to execute using
 #### Single In
 ``python path/__main__.py path_to_input.json `` for running the path finding algorithm on (**SINGLE**) input json file you specified.\
 #### Highthroughput In
@@ -21,6 +21,16 @@ TODO::
 
 # IO
 ### Stage 1: Manuel inputs .json
+#### Input file naming suggested format
+```r5_4_0_leo_0.json``` 
+r5: AI play as RED, board size N = 5.\ 
+4_0: 4 opponent's and 0 our cells exist on the board.\
+leo: creator name.\
+0: An int uniquely identifies the input file with same head arguments. \
+
+#### Output file naming convension
+in ```r5_4_0_leo_0.json``` out ```r5_4_0_leo_OUT_0.txt``` 
+in ```r6_3_3_leo_0.json``` out ```r6_3_3_selena_OUT_0.txt``` 
 
 ### Stage 2: generate inputs with GUI and enable PvC/CvC mode
 
