@@ -25,5 +25,6 @@ TODO::
 ### Stage 2: generate inputs with GUI and enable PvC/CvC mode
 
 # Contributors
-___Your Prefered Name \ 
-___Leo Xinqi Yu xinqiy@student.unimelb.edu.au
+#### FriendlyAI Devs
+___Your Prefered Name___  \
+___Leo Xinqi Yu___ xinqiy@student.unimelb.edu.au
