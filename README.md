@@ -31,6 +31,7 @@ TODO::
 **4_0**: 4 opponent's and 0 our cells exist on the board. \
 **leo**: Creator name. \
 **0**: An int uniquely identifies the input file with same head arguments. 
+![image](https://user-images.githubusercontent.com/60214417/159122603-4dcdf00f-b61c-47ad-8036-f84bee62afdb.png)
 
 #### Output file naming convension
 in ```r5_4_0_leo_0.json``` out ```r5_4_0_leo_OUT_0.txt```  \
