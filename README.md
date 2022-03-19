@@ -6,7 +6,7 @@ A nice and friendly Cachex (a game designed by UoM COMP30024-AI 2022-Sem1) playe
 ### Path finding
 Members are expected to execute using\
 ``python path/__main__.py path_to_input.json `` for running the path finding algorithm on (***SINGLE***) input json file.\
-``python path/__main__.py -m path_to_input_folder `` -m (***multiple***) flag followed by path to a folder, to run across all input files in the specified folder.
+``python path/__main__.py -m path_to_input_folder `` -m (***MULTIPLE***) flag followed by path to a folder, to run on all inputs in the specified folder.
 
 
 # IO
