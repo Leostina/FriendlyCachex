@@ -10,13 +10,13 @@ import sys
 import json
 from typing import List
 from numpy import fromiter
-
 from sympy import true
 
 # If you want to separate your code into separate files, put them
 # inside the `search` directory (like this one and `util.py`) and
 # then import from them like this:
 from util import *
+
 def main():
     try:
         with open(sys.argv[1]) as file:
@@ -41,9 +41,10 @@ def main():
 
     path = a_star(board_n, start_board, tuple(start_cell), tuple(goal_cell))
     print(len(path))
-    [print(p) for p in path]
+    [print(p.coord) for p in path]
 
-
+    # visual the path we found
+    visual_path(board_n, start_board, path)
 
 def a_star(n, board, start, goal):
     # return index of the Cell with min f_val 
@@ -63,7 +64,7 @@ def a_star(n, board, start, goal):
     def path_backtrack(cell) -> list:
         path = []
         while(cell):
-            path.insert(0, cell.coord)
+            path.insert(0, cell)
             cell = cell.parent
         return path
 

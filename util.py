@@ -7,23 +7,9 @@ Feel free to use and/or modify them to help you develop your program.
 """
 
 from itertools import islice
+import string
 from this import d
-
-# a cell
-class Cell():
-    def __init__(self, coord=None, parent=None, g_val=0, h_val=0, f_val=0):
-        self.coord = coord
-        self.parent = parent
-        self.g_val = g_val
-        self.h_val = h_val
-        self.f_val = f_val
-
-    def __eq__(self, cell):
-        return self.coord == cell.coord
-
-    def __str__(self):
-        return "Coord: {}, Parent: {}, g: {}, h: {}, f: {}".format(self.coord, self.parent, self.g_val, self.h_val, self.f_val)
-
+from matplotlib.image import imread
 
 
 def apply_ansi(str, bold=True, color=None):
@@ -48,6 +34,58 @@ def apply_ansi(str, bold=True, color=None):
     if color == "b":
         color_code = "\033[34m"
     return f"{bold_code}{color_code}{str}\033[0m"
+
+
+
+# Author: Leo
+# a cell
+class Cell():
+    def __init__(self, coord=None, parent=None, g_val=0, h_val=0, f_val=0):
+        self.coord = coord
+        self.parent = parent
+        self.g_val = g_val
+        self.h_val = h_val
+        self.f_val = f_val
+
+    def __eq__(self, cell):
+        return self.coord == cell.coord
+
+    def __str__(self):
+        return "Coord: {}, Parent: {}, g: {}, h: {}, f: {}".format(self.coord, self.parent, self.g_val, self.h_val, self.f_val)
+
+# Author: Leo
+# a board, im_red == False indicates we are BLUE xD
+class Board():
+    def __init__(self, board_size, red_cells=None, blue_cells=None, im_red=True) -> None:
+        self.board_size = board_size
+        self.red_cells = red_cells
+        self.blue_cells = blue_cells
+        self.im_red = im_red 
+    
+    def __str__(self):
+        size_str = "| Board size: " + str(self.board_size) + "\n"
+        color_str = "| Side: " + (apply_ansi("RED", bold = True, color = "r") if (self.im_red) else apply_ansi("RED", bold = True, color = "r")) + "\n"
+        
+        red_str = "| Red cells: \n"
+        if (self.red_cells):                
+            for cell in self.red_cells:
+                red_str += ("| "+ apply_ansi(str(cell), bold = True, color = "r")  + "\n")
+            red_str += "\n"
+        else:
+            red_str += "| -\n"
+
+        blue_str = "| Blue cells: \n"
+        if (self.blue_cells):
+            for cell in self.blue_cells:
+                blue_str += ("| " + apply_ansi(str(cell),
+                             bold=True, color="b")+"\n")
+            blue_str += "\n"
+        else:
+            blue_str += "| -\n"
+        return size_str + color_str + red_str + blue_str
+
+
+
 
 def print_coordinate(r, q, **kwargs):
     """
@@ -166,6 +204,9 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
     print(output, **kwargs)
 
 
+
+# process_input()
+# Author: Leo
 def process_input(json_dict):
     """process input dict read from json"""
 
@@ -174,9 +215,27 @@ def process_input(json_dict):
     start = json_dict["start"]
     goal = json_dict["goal"]
 
+    board = Board(board_size=board_n, red_cells=None, blue_cells=start_board, im_red=True)
+    print(board)
+
     disp_board = start_board.copy()
     disp_board.update({tuple(start): "S",tuple(goal): "G"})
     print_board(n=board_n, board_dict=disp_board, message=apply_ansi(
         str("== Input processed, Starting and Goal cells are marked as S/G, enjoy! =="), True, "b"), ansi=True)
 
     return board_n, start_board, start, goal
+
+
+# visual_path()
+# Author: Leo
+def visual_path(board_n, start_board, path):
+    # path is identical to the start_board
+    if (len(path)<=2):
+        return start_board
+    disp_board = start_board.copy()
+    idx = 1
+    for cell in path[1:-1]:
+        disp_board.update({cell.coord : str(idx)})
+        idx+=1
+    print_board(n=board_n , board_dict=disp_board, message=apply_ansi(
+    str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)
