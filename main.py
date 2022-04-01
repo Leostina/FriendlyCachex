@@ -29,22 +29,23 @@ def main():
     print(apply_ansi("Hi Selena in BLUE", True, "b"))
     
     # given starting board config 
-    board_n, start_board, start_cell, goal_cell = process_input(data)
+    board, start_cell, goal_cell = process_input(data)
     
-    
+
     # TODO:
     # Find and print a solution to the board configuration described
     # by `data`.
     # Why not start by trying to print this configuration out using the
     # `print_board` helper function? (See the `util.py` source code for
     # usage information).
-
-    path = a_star(board_n, start_board, tuple(start_cell), tuple(goal_cell))
+    
+    path = a_star(board.board_size, (board.blue_cells if board.im_red else board.red_cells), start_cell, goal_cell)
     print(len(path))
     [print(p.coord) for p in path]
 
+
     # visual the path we found
-    visual_path(board_n, start_board, path)
+    visual_path(board, path, extra_cells=[start_cell, goal_cell])
 
 def a_star(n, board, start, goal):
     # return index of the Cell with min f_val 
@@ -75,8 +76,7 @@ def a_star(n, board, start, goal):
         return (t1[0]+t2[0], t1[1]+t2[1])
 
     # init
-    start = Cell(coord=start)
-    goal = Cell(coord=goal)
+
     frontier, visited = [start], []
 
 

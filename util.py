@@ -6,9 +6,11 @@ This module contains some helper functions for printing actions and boards.
 Feel free to use and/or modify them to help you develop your program.
 """
 
+from copy import deepcopy
 from itertools import islice
 import string
 from this import d
+from tracemalloc import start
 from matplotlib.image import imread
 
 
@@ -40,18 +42,44 @@ def apply_ansi(str, bold=True, color=None):
 # Author: Leo
 # a cell
 class Cell():
-    def __init__(self, coord=None, parent=None, g_val=0, h_val=0, f_val=0):
+    def __init__(self, im_red=None, coord=None, parent=None, g_val=0, h_val=0, f_val=0, shown_as=None):
         self.coord = coord
         self.parent = parent
         self.g_val = g_val
         self.h_val = h_val
         self.f_val = f_val
+        self.im_red = im_red
+        self.shown_as = shown_as
+        self.is_empty = False
 
     def __eq__(self, cell):
         return self.coord == cell.coord
 
     def __str__(self):
-        return "Coord: {}, Parent: {}, g: {}, h: {}, f: {}".format(self.coord, self.parent, self.g_val, self.h_val, self.f_val)
+        string = "CELL "
+        if (not self.coord):
+            return apply_ansi("UNKNOWN CELL", True, None)
+        if (self.is_empty):
+            return apply_ansi("EMPTY CELL", True, None)
+        string += "| Coord: {} ".format(self.coord)
+        if (self.parent):
+            string += "| Parent: {} ".format(self.parent)
+        if (self.coord):
+            string += "| g: {} ".format(self.g_val)
+        if (self.coord):
+            string += "| h: {} ".format(self.h_val)
+        if (self.coord):
+            string += "| f: {} ".format(self.f_val)
+        string += "| Side: "
+        if (self.im_red==None):
+            string += apply_ansi("UNKNOWN ", True, None)
+        elif (self.im_red):
+            string += apply_ansi("RED ", True, 'r')
+        else :
+            string += apply_ansi("BLUE ", True, 'b')
+        if (self.shown_as):
+            string += "| Shown as: " + self.shown_as + " "
+        return string
 
 # Author: Leo
 # a board, im_red == False indicates we are BLUE xD
@@ -60,6 +88,7 @@ class Board():
         self.board_size = board_size
         self.red_cells = red_cells
         self.blue_cells = blue_cells
+        self.extra_cells = None
         self.im_red = im_red 
     
     def __str__(self):
@@ -70,7 +99,7 @@ class Board():
         if (self.red_cells):                
             for cell in self.red_cells:
                 red_str += ("| "+ apply_ansi(str(cell), bold = True, color = "r")  + "\n")
-            red_str += "\n"
+            
         else:
             red_str += "| -\n"
 
@@ -79,11 +108,29 @@ class Board():
             for cell in self.blue_cells:
                 blue_str += ("| " + apply_ansi(str(cell),
                              bold=True, color="b")+"\n")
-            blue_str += "\n"
         else:
             blue_str += "| -\n"
-        return size_str + color_str + red_str + blue_str
 
+        extra_str = "| Extra cells: \n"
+        if (self.extra_cells):
+            for cell in self.extra_cells:
+                extra_str += ("| " + apply_ansi(str(cell),
+                             bold=True, color=(cell[0] if len(cell)>0 else "" ))+"\n")
+            
+        else:
+            extra_str += "| -\n"
+        return size_str + color_str + red_str + blue_str + extra_str
+
+
+
+# Author: Leo
+# a board, im_red == False indicates we are BLUE xD
+def our_print_board(board, extra_cells, message = "", ansi=True, **kwargs):
+    board_dict = dict() 
+    board_dict.update(board.blue_cells if board.blue_cells else {})
+    board_dict.update(board.red_cells if board.red_cells else{})
+    board_dict.update(board.extra_cells if board.extra_cells else{})
+    print_board(board.board_size, board_dict, message, ansi)
 
 
 
@@ -188,9 +235,17 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
         for j in range(n):
             coord = (n - i - 1, j)
             value = str(board_dict.get(coord, ""))
+            # Leo added this if on 1st April 2022
+            c = None
+            if (len(value)> 1):
+                c = value[0]
+                value = value[1:]
+            
             contents = value.center(h_spacing - 1)
             if ansi:
-                contents = apply_ansi_s(contents, color=value)
+                # Leo modified on 1st April 2022
+                # contents = apply_ansi_s(contents, color=value)
+                contents = apply_ansi_s(contents, color=(c if c else None))
             output += contents + (v_divider if j < n - 1 else "")
         output += apply_ansi_s(v_divider, color="b")
         output += "\n"
@@ -211,31 +266,37 @@ def process_input(json_dict):
     """process input dict read from json"""
 
     board_n = json_dict["n"]
-    start_board = {(cell[1], cell[2]):cell[0] for cell in json_dict["board"]}
-    start = json_dict["start"]
-    goal = json_dict["goal"]
+    start_board = {(cell[1], cell[2]):( cell[0][0]+cell[0] if len(cell[0])>0  else "" ) for cell in json_dict["board"]}
+    start = Cell(im_red=True, coord=tuple(json_dict["start"]),shown_as="rS")
+    goal = Cell(im_red=True, coord=tuple(json_dict["goal"]),shown_as="rG")
 
     board = Board(board_size=board_n, red_cells=None, blue_cells=start_board, im_red=True)
     print(board)
 
     disp_board = start_board.copy()
-    disp_board.update({tuple(start): "S",tuple(goal): "G"})
+    disp_board.update({start.coord: "S",goal.coord: "G"})
     print_board(n=board_n, board_dict=disp_board, message=apply_ansi(
         str("== Input processed, Starting and Goal cells are marked as S/G, enjoy! =="), True, "b"), ansi=True)
 
-    return board_n, start_board, start, goal
+    return board, start, goal
 
 
 # visual_path()
 # Author: Leo
-def visual_path(board_n, start_board, path):
+# 
+def visual_path(start_board:Board, path:"list[Cell]" = None, extra_cells:"list[Cell]" = None) -> None:
     # path is identical to the start_board
     if (len(path)<=2):
         return start_board
-    disp_board = start_board.copy()
+    disp_board = dict() 
+    disp_board.update(start_board.blue_cells if start_board.blue_cells else {})
+    disp_board.update(start_board.red_cells if start_board.red_cells else {})
     idx = 1
     for cell in path[1:-1]:
-        disp_board.update({cell.coord : str(idx)})
+        disp_board.update({cell.coord : ('r' if start_board.im_red else 'b')+str(idx)})
         idx+=1
-    print_board(n=board_n , board_dict=disp_board, message=apply_ansi(
+    for cell in extra_cells:
+        disp_board.update({cell.coord: cell.shown_as})
+    
+    print_board(n=start_board.board_size , board_dict=disp_board, message=apply_ansi(
     str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)
