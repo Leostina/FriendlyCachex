@@ -9,6 +9,7 @@ Feel free to use and/or modify them to help you develop your program.
 from copy import deepcopy
 from itertools import islice
 import string
+from tarfile import ExtractError
 from this import d
 from tracemalloc import start
 from matplotlib.image import imread
@@ -125,15 +126,15 @@ class Board():
 
 # Author: Leo
 # a board, im_red == False indicates we are BLUE xD
-def our_print_board(board, extra_cells, message = "", ansi=True, **kwargs):
+def our_print_board(board, extra_cells=None, message = "", ansi=True, **kwargs):
     board_dict = dict() 
     board_dict.update(board.blue_cells if board.blue_cells else {})
     board_dict.update(board.red_cells if board.red_cells else{})
     board_dict.update(board.extra_cells if board.extra_cells else{})
+    board_dict.update(extra_cells if extra_cells else{})
     print_board(board.board_size, board_dict, message, ansi)
 
-
-
+# Original
 def print_coordinate(r, q, **kwargs):
     """
     Output an axial coordinate (r, q) according to the format instructions.
@@ -142,6 +143,8 @@ def print_coordinate(r, q, **kwargs):
     """
     print(f"({r},{q})", **kwargs)
 
+
+# Original
 def print_board(n, board_dict, message="", ansi=False, **kwargs):
     """
     For help with visualisation and debugging: output a board diagram with
@@ -283,7 +286,6 @@ def process_input(json_dict):
 
 # visual_path()
 # Author: Leo
-# 
 def visual_path(start_board:Board, path:"list[Cell]" = None, extra_cells:"list[Cell]" = None) -> None:
     # path is identical to the start_board
     if (len(path)<=2):
