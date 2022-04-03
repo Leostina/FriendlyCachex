@@ -81,7 +81,7 @@ def a_star(n, board, start, goal):
         
         # goal test
         if curr_cell == goal:
-            has_valid_solution = True;
+            has_valid_solution = True
             return path_backtrack(curr_cell)
 
 
