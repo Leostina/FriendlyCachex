@@ -8,6 +8,8 @@ Feel free to use and/or modify them to help you develop your program.
 
 from itertools import islice
 
+from numpy import extract
+
 
 def apply_ansi(str, bold=True, color=None):
     """
@@ -79,11 +81,11 @@ class Cell():
 # Author: Leo
 # a board, im_red == False indicates we are BLUE xD
 class Board():
-    def __init__(self, board_size, red_cells=None, blue_cells=None, im_red=True) -> None:
+    def __init__(self, board_size, red_cells=None, blue_cells=None, extra_cells = None, im_red=True) -> None:
         self.board_size = board_size
         self.red_cells = red_cells
         self.blue_cells = blue_cells
-        self.extra_cells = None
+        self.extra_cells = extra_cells
         self.im_red = im_red 
     
     def __str__(self):
@@ -267,7 +269,20 @@ def process_input(json_dict):
     start = Cell(im_red=True, coord=tuple(json_dict["start"]),shown_as="rS")
     goal = Cell(im_red=True, coord=tuple(json_dict["goal"]),shown_as="rG")
 
-    board = Board(board_size=board_n, red_cells=None, blue_cells=start_board, im_red=True)
+
+    red_cells, blue_cells ,extra_cells= dict(),dict(),dict()
+    for cell in start_board.items():
+        # print(cell)
+        if cell[1][0] == 'b':
+            blue_cells.update({cell[0]:cell[1]})
+        elif cell[1][0] == 'r':
+            red_cells.update({cell[0]:cell[1]})
+        else:
+            extra_cells.update({cell[0]:cell[1]})
+    # print(red_cells)
+    # print(blue_cells)
+
+    board = Board(board_size=board_n, red_cells=red_cells, blue_cells=blue_cells, extra_cells=extra_cells, im_red=True)
     #print(board)
 
     disp_board = start_board.copy()
@@ -289,10 +304,21 @@ def visual_path(start_board:Board, path:"list[Cell]" = None, extra_cells:"list[C
     disp_board.update(start_board.red_cells if start_board.red_cells else {})
     idx = 1
     for cell in path[1:-1]:
-        disp_board.update({cell.coord : ('r' if start_board.im_red else 'b')+str(idx)})
-        idx+=1
-    for cell in extra_cells:
-        disp_board.update({cell.coord: cell.shown_as})
+        if start_board.im_red:
+            if cell.coord in start_board.red_cells:
+                disp_board.update({cell.coord : 'rr'})
+            else:
+                disp_board.update({cell.coord : 'r'+str(idx)})
+                idx+=1
+        else:
+            if cell.coord in start_board.blue_cells:
+                disp_board.update({cell.coord : ('bX')})
+            else:
+                disp_board.update({cell.coord : 'b'+str(idx)})
+                idx+=1
+
+    if extra_cells:
+        [disp_board.update({cell.coord:cell.shown_as}) for cell in extra_cells ]
     
     print_board(n=start_board.board_size , board_dict=disp_board, message=apply_ansi(
     str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)

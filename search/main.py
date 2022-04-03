@@ -9,6 +9,8 @@ This script contains the entry point to the program (the code in
 import sys
 import json
 
+from sympy import capture
+
 # If you want to separate your code into separate files, put them
 # inside the `search` directory (like this one and `util.py`) and
 # then import from them like this:
@@ -31,15 +33,29 @@ def main():
 
     # given starting board config
     board, start_cell, goal_cell = process_input(data)
-    path = a_star(board.board_size, (board.blue_cells if board.im_red else board.red_cells), start_cell, goal_cell)
-    print(len(path))
-    if len(path) != 0:
-        [print(p.coord) for p in path]
+    path = a_star(board.board_size, board, start_cell, goal_cell)
+    
+    # DEBUG
+    visual_path(board, path, [start_cell, goal_cell])
+
+    pa_path = [p for p in path if p.coord not in (board.red_cells.keys() if board.im_red else board.blue_cells.keys())] # part a path
+    print(len(pa_path))
+    [print(cell.coord) for cell in pa_path]
 
     # visual the path we found
     #visual_path(board, path, extra_cells=[start_cell, goal_cell])
 
 def a_star(n, board, start, goal):
+
+    enemies = board.blue_cells
+
+    if board.im_red:
+        enemies = board.blue_cells
+        captured = board.red_cells
+    else:
+        enemies = board.red_cells
+        captured = board.blue_cells
+
     # return index of the Cell with min f_val 
     def min_f_val(list) -> int:
         best_i = 0
@@ -52,7 +68,7 @@ def a_star(n, board, start, goal):
         return best_i
 
     def check_valid_cell(coord, n):
-        return coord[0] >= 0 and coord[1] >= 0 and coord[0] < n and coord[1] < n and (coord not in board.keys())
+        return coord[0] >= 0 and coord[1] >= 0 and coord[0] < n and coord[1] < n and (coord not in enemies.keys())
 
     def path_backtrack(cell) -> list:
         path = []
@@ -70,7 +86,6 @@ def a_star(n, board, start, goal):
     # init
 
     frontier, visited = [start], []
-    has_valid_solution = False
 
     while (len(frontier) > 0):
         # find and move to the best cell with min f_val in the frontier
@@ -81,7 +96,6 @@ def a_star(n, board, start, goal):
         
         # goal test
         if curr_cell == goal:
-            has_valid_solution = True
             return path_backtrack(curr_cell)
 
 
@@ -99,8 +113,8 @@ def a_star(n, board, start, goal):
             if any(cell == v for v in visited):
                 continue
 
-            # assign g h f values
-            cell.g_val = curr_cell.g_val + 1 # one more step
+
+            cell.g_val = curr_cell.g_val + 1 if cell.coord not in captured.keys() else curr_cell.g_val # one more step 
             cell.h_val = calc_heuristic(cell, goal)
             cell.f_val = cell.g_val + cell.h_val
 
@@ -115,5 +129,4 @@ def a_star(n, board, start, goal):
                         frontier.pop(fid)
             if add:
                 frontier.append(cell)
-    if not has_valid_solution:
-        return []
+    return []
