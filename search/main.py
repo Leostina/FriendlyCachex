@@ -33,11 +33,11 @@ def main():
     board, start_cell, goal_cell = process_input(data)
     path = a_star(board.board_size, (board.blue_cells if board.im_red else board.red_cells), start_cell, goal_cell)
     print(len(path))
-    [print(p.coord) for p in path]
-
+    if len(path) != 0:
+        [print(p.coord) for p in path]
 
     # visual the path we found
-    visual_path(board, path, extra_cells=[start_cell, goal_cell])
+    #visual_path(board, path, extra_cells=[start_cell, goal_cell])
 
 def a_star(n, board, start, goal):
     # return index of the Cell with min f_val 
@@ -70,7 +70,7 @@ def a_star(n, board, start, goal):
     # init
 
     frontier, visited = [start], []
-
+    has_valid_solution = False
 
     while (len(frontier) > 0):
         # find and move to the best cell with min f_val in the frontier
@@ -81,6 +81,7 @@ def a_star(n, board, start, goal):
         
         # goal test
         if curr_cell == goal:
+            has_valid_solution = True;
             return path_backtrack(curr_cell)
 
 
@@ -114,3 +115,5 @@ def a_star(n, board, start, goal):
                         frontier.pop(fid)
             if add:
                 frontier.append(cell)
+    if not has_valid_solution:
+        return []

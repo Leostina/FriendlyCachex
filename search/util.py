@@ -294,5 +294,5 @@ def visual_path(start_board:Board, path:"list[Cell]" = None, extra_cells:"list[C
     for cell in extra_cells:
         disp_board.update({cell.coord: cell.shown_as})
     
-    '''print_board(n=start_board.board_size , board_dict=disp_board, message=apply_ansi(
-    str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)'''
+    print_board(n=start_board.board_size , board_dict=disp_board, message=apply_ansi(
+    str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)
