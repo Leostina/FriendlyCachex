@@ -16,6 +16,7 @@ from sympy import capture
 # then import from them like this:
 from search.util import *
 
+# main()
 def main():
     try:
         with open(sys.argv[1]) as file:
@@ -24,27 +25,21 @@ def main():
         print("usage: python3 -m search path/to/input.json", file=sys.stderr)
         sys.exit(1)
 
-    # TODO:
-    # Find and print a solution to the board configuration described
-    # by `data`.
-    # Why not start by trying to print this configuration out using the
-    # `print_board` helper function? (See the `util.py` source code for
-    # usage information).
 
     # given starting board config
     board, start_cell, goal_cell = process_input(data)
     path = a_star(board.board_size, board, start_cell, goal_cell)
     
-    # DEBUG
-    visual_path(board, path, [start_cell, goal_cell])
+    # Visualise the path
+    # visual_path(board, path, [start_cell, goal_cell])
 
     pa_path = [p for p in path if p.coord not in (board.red_cells.keys() if board.im_red else board.blue_cells.keys())] # part a path
     print(len(pa_path))
     [print(cell.coord) for cell in pa_path]
 
-    # visual the path we found
-    #visual_path(board, path, extra_cells=[start_cell, goal_cell])
-
+# s_star()
+# Author: Leo 
+# A* Search
 def a_star(n, board, start, goal):
 
     enemies = board.blue_cells
@@ -84,7 +79,6 @@ def a_star(n, board, start, goal):
         return (t1[0]+t2[0], t1[1]+t2[1])
 
     # init
-
     frontier, visited = [start], []
 
     while (len(frontier) > 0):
