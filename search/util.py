@@ -6,13 +6,7 @@ This module contains some helper functions for printing actions and boards.
 Feel free to use and/or modify them to help you develop your program.
 """
 
-from copy import deepcopy
 from itertools import islice
-import string
-from tarfile import ExtractError
-from this import d
-from tracemalloc import start
-from matplotlib.image import imread
 
 
 def apply_ansi(str, bold=True, color=None):
@@ -274,12 +268,12 @@ def process_input(json_dict):
     goal = Cell(im_red=True, coord=tuple(json_dict["goal"]),shown_as="rG")
 
     board = Board(board_size=board_n, red_cells=None, blue_cells=start_board, im_red=True)
-    print(board)
+    #print(board)
 
     disp_board = start_board.copy()
     disp_board.update({start.coord: "S",goal.coord: "G"})
-    print_board(n=board_n, board_dict=disp_board, message=apply_ansi(
-        str("== Input processed, Starting and Goal cells are marked as S/G, enjoy! =="), True, "b"), ansi=True)
+    '''print_board(n=board_n, board_dict=disp_board, message=apply_ansi(
+        str("== Input processed, Starting and Goal cells are marked as S/G, enjoy! =="), True, "b"), ansi=True)'''
 
     return board, start, goal
 
@@ -300,5 +294,5 @@ def visual_path(start_board:Board, path:"list[Cell]" = None, extra_cells:"list[C
     for cell in extra_cells:
         disp_board.update({cell.coord: cell.shown_as})
     
-    print_board(n=start_board.board_size , board_dict=disp_board, message=apply_ansi(
-    str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)
+    '''print_board(n=start_board.board_size , board_dict=disp_board, message=apply_ansi(
+    str("== Displaying a path, from player BLUE =="), True, "b"), ansi=True)'''
