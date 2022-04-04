@@ -8,8 +8,6 @@ Feel free to use and/or modify them to help you develop your program.
 
 from itertools import islice
 
-from numpy import extract
-
 
 def apply_ansi(str, bold=True, color=None):
     """

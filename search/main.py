@@ -8,12 +8,6 @@ This script contains the entry point to the program (the code in
 
 import sys
 import json
-
-from sympy import capture
-
-# If you want to separate your code into separate files, put them
-# inside the `search` directory (like this one and `util.py`) and
-# then import from them like this:
 from search.util import *
 
 # main()
@@ -31,7 +25,7 @@ def main():
     path = a_star(board.board_size, board, start_cell, goal_cell)
     
     # Visualise the path
-    # visual_path(board, path, [start_cell, goal_cell])
+    #visual_path(board, path, [start_cell, goal_cell])
 
     pa_path = [p for p in path if p.coord not in (board.red_cells.keys() if board.im_red else board.blue_cells.keys())] # part a path
     print(len(pa_path))
