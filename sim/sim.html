@@ -1,0 +1,24 @@
+<body style="margin: auto; max-width: 120ch">
+    <h2>
+        Leo's Cachex Game Playground
+    </h2>
+    <p>
+        Click a hex to sim a step move by the each player, turn switching is automatically done by default.
+    </p>
+    <p style="text-align: right">
+        &mdash;Leo
+    </p>
+    <input id="input" placeholder="Enter board size N [3,15]" onblur="main()"></input>
+    <p id="nextColorLbl">player: RED</p>
+    <p id="steal"></p>
+    <svg id="s" version="1.1" viewBox="-70 -180 400 360" preserveAspectRatio="xMidYMid meet"
+        xmlns="http://www.w3.org/2000/svg">
+    </svg>
+    <p>
+        Source (<a id="download" href="#" download="test.json">download</a>):
+    </p>
+    <pre class="output" id="output">
+    </pre>
+
+    <script src="sim.js"></script>
+</body>
