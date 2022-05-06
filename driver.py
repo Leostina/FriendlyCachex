@@ -34,16 +34,19 @@ class Board():
     
     def endgame_dfs(self, im_red):
         enders = self.red_enders if im_red else self.blue_enders
-        frontier = self.red_starters if im_red else self.blue_starters
+        frontier = self.red_starters.copy() if im_red else self.blue_starters.copy()
         checked = dict()
+        # print("frontier",frontier)
+        # print("enders",enders)
+        # print("checked",checked)
         # push goal states
         while(len(frontier)>0):
             curr = frontier.pop()
             # curr is in the end states
-            if enders[curr]:
+            if enders.get(curr):
                 return 1 if im_red else -1
             # not in the end states, check if we have seen this node
-            if not checked[curr]:
+            if not checked.get(curr):
                 # push it into the checked dict
                 checked.update({curr:1})
                 # expand and add to the end of frontier
@@ -66,6 +69,12 @@ class Board():
         # remove itself from the board
         self.cells[coord].piece=0
         self.cells[coord].nb_allies=[]
+
+        # remove from starters
+        if coord in self.red_starters:
+            self.red_starters.remove(coord)
+        elif coord in self.blue_starters:
+            self.blue_starters.remove(coord)
 
     def valid_and_color(self, coord, color):
         if self.outside_range(coord):
@@ -225,6 +234,12 @@ class Board():
             elif (im_red and self.cells[c].piece == 1) or ((not im_red) and self.cells[c].piece == -1):
                 self.cells[c].nb_allies.append(coord)
                 self.cells[coord].nb_allies.append(c)
+        if im_red:    
+            if (coord[0]==0 and coord not in self.red_starters):
+                self.red_starters.append(coord)
+        else:
+            if (coord[1]==0 and coord not in self.blue_starters):
+                self.blue_starters.append(coord)
 
     def steal(self, target_coord):
         self.round+=1
@@ -274,4 +289,24 @@ partb_print_board(game)
 game.move(False, (0,0))
 partb_print_board(game)
 game.move(True, (6,6))
+partb_print_board(game)
+game.move(True, (0,1))
+partb_print_board(game)
+game.move(True, (1,1))
+partb_print_board(game)
+game.move(True, (2,1))
+partb_print_board(game)
+game.move(True, (1,4))
+partb_print_board(game)
+game.move(True, (1,5))
+partb_print_board(game)
+game.move(True, (2,5))
+partb_print_board(game)
+game.move(True, (3,5))
+partb_print_board(game)
+game.move(True, (4,5))
+partb_print_board(game)
+game.move(True, (5,5))
+partb_print_board(game)
+game.move(True, (5,6))
 partb_print_board(game)
