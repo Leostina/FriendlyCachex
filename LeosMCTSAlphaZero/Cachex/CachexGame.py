@@ -17,7 +17,7 @@ class CachexGame(Game):
     def getInitBoard(self):
         # return the board at init
         board = Board(self.n)
-        return np.array(board._data)
+        return board
 
     def getBoardSize(self):
         # return initial board
@@ -32,15 +32,12 @@ class CachexGame(Game):
         move = (int(action/self.n), action%self.n)
         board.execute_move(move, player)
         # switch player
-        return (board._data, -player) 
-    
+        return (board, -player) 
     
     def getValidMoves(self, board, player):
         # return a fixed size binary vector
         valids = [0]*self.getActionSize()
-        b = Board(self.n)
-        b._data = np.copy(board)
-        legalMoves =  b.get_legal_moves(player)
+        legalMoves =  board.get_legal_moves(player)
         for r, q in legalMoves:
             valids[self.n*r+q]=1
         return np.array(valids)
@@ -52,10 +49,9 @@ class CachexGame(Game):
 
     def getCanonicalForm(self, board, player):
         # return state if player==1, else return -state if player==-1
-        return player*board
+        board._data*=player
 
-    def getSymmetries(self, board, pi):
-        return [(board,pi)]
+        return board
 
     def getSymmetries(self, board, pi):
         # mirror, rotational
@@ -64,25 +60,24 @@ class CachexGame(Game):
         l = []
         # rot 180 deg and itsef
         for i in [2,4]:
-                newB = np.rot90(board, i)
+                newB = np.rot90(board._data, i)
                 newPi = np.rot90(pi_board, i)
 
                 l += [(newB, list(newPi.ravel()) + [pi[-1]])]
         return l
 
     
-    def stringRepresentation(self, board):
-        return board.tostring()
+    def stringRepresentation(self, canonicalBoard):
+        return canonicalBoard.tostring()
 
-    def stringRepresentationReadable(self, board):
-        board_s = "".join(self.content_lookup[cell] for r in board for cell in r)
+    def stringRepresentationReadable(self, canonicalBoard):
+        board_s = "".join(self.content_lookup[cell] for r in canonicalBoard for cell in r)
         return board_s
 
     def getScore(self, board, player):
         # for greedy algorithm, defined the round number of a player win 
-        b = Board(self.n)
-        b._data = np.copy(board)
-        return 
+        # todo
+        return 1
 
     
     
@@ -239,8 +234,8 @@ class CachexGame(Game):
         for r in range(board.n):
             for q in range(board.n ):
                 coord = (r,q)
-                if board[coord] == -1:
+                if board._data[coord] == -1:
                     board_dict.update({coord:"bB"})
-                elif board[coord] == 1:
+                elif board._data[coord] == 1:
                     board_dict.update({coord:"rR"})
         print_board(board.n, board_dict, "", True)

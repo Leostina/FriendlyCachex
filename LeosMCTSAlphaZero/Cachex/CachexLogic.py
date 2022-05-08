@@ -2,6 +2,7 @@ import collections
 from ctypes.wintypes import HINSTANCE
 from queue import Queue
 from numpy import zeros, array, roll, vectorize
+from sqlalchemy import false
 
 # Very small number
 _EPS = 1e-8
@@ -30,11 +31,11 @@ _CAPTURE_PATTERNS = [[_ADD(n1, n2), n1, n2]
         list(zip(_HEX_STEPS, roll(_HEX_STEPS, 2)))]
 
 # Maps between player string and internal token type
-_TOKEN_MAP_OUT = { 0: None, 1: "red", 2: "blue" }
+_TOKEN_MAP_OUT = { 0: None, 1: "red", -1: "blue" }
 _TOKEN_MAP_IN = {v: k for k, v in _TOKEN_MAP_OUT.items()}
 
 # Map between player token types
-_SWAP_PLAYER = { 0: 0, 1: 2, 2: 1 }
+_SWAP_PLAYER = { 0: 0, 1: -1, -1: 1 }
 
 # Max number of turns allowed before a draw is declared
 _MAX_REPEAT_STATES = 7
@@ -58,7 +59,7 @@ class Board():
         """
         Set the token at given board coord (r, q).
         """
-        self._data[coord] = _TOKEN_MAP_IN[token]
+        self._data[coord] = token
 
     def digest(self):
         """
@@ -148,7 +149,7 @@ class Board():
         """
         True iff coord is occupied by a token (e.g., not None).
         """
-        return self[coord] != None
+        return self._data[coord] != None
 
     def _apply_captures(self, coord):
         """
@@ -172,8 +173,7 @@ class Board():
 
         # Remove any captured tokens
         for coord in captured:
-            self[coord] = None
-
+            self._data[coord] = 0
         return list(captured)
 
     def _coord_neighbours(self, coord):
@@ -197,7 +197,7 @@ class Board():
             moves.add(move)
         for r in range(self.n):
             for q in range(self.n):
-                if self[r][q] == 0:
+                if self._data[r][q] == 0:
                     moves.add((r,q))
         if self.turn == 1 and self.n > 2 and self.n % 2 == 1:
             moves.remove((self.n-1)/2,(self.n-1)/2)
