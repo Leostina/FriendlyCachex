@@ -1,8 +1,8 @@
+from __future__ import print_function
 from itertools import islice
 import numpy as np
-from CachexLogic import *
+from .CachexLogic import *
 from Game import Game
-from util import apply_ansi, print_board
 
 class CachexGame(Game):
     content_lookup = {-1: "B", 0: "-", 1:"R"}
@@ -29,12 +29,10 @@ class CachexGame(Game):
 
     def getNextState(self, board, player, action):
         # action must be a valid move
-        b = Board(self.n)
-        b._data = np.copy(board)
         move = (int(action/self.n), action%self.n)
-        b.execute_move(move, player)
+        board.execute_move(move, player)
         # switch player
-        return (b._data, -player) 
+        return (board._data, -player) 
     
     
     def getValidMoves(self, board, player):
@@ -47,7 +45,7 @@ class CachexGame(Game):
             valids[self.n*r+q]=1
         return np.array(valids)
 
-    def getGameEnded(self, board:Board, player):
+    def getGameEnded(self, board, player):
         # return 0 if not ended, 1 if player 1 won, -1 if player 1 lost, small non-zero val for draw
         # player = 1
         return board.check_win_move(player)

@@ -1,4 +1,3 @@
-
 import collections
 from ctypes.wintypes import HINSTANCE
 from queue import Queue
@@ -47,7 +46,7 @@ class Board():
         self.turn = 1
         self.curr_move = None
         self._data = zeros((n, n), dtype=int)
-        self.history = collections.Counter({self.board.digest(): 1})
+        self.history = collections.Counter({self._data.tobytes() : 1})
 
     def __getitem__(self, coord):
         """
