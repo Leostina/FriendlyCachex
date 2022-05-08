@@ -1,6 +1,11 @@
+
+import collections
 from ctypes.wintypes import HINSTANCE
 from queue import Queue
 from numpy import zeros, array, roll, vectorize
+
+# Very small number
+_EPS = 1e-8
 
 # Utility function to add two coord tuples
 _ADD = lambda a, b: (a[0] + b[0], a[1] + b[1])
@@ -32,11 +37,17 @@ _TOKEN_MAP_IN = {v: k for k, v in _TOKEN_MAP_OUT.items()}
 # Map between player token types
 _SWAP_PLAYER = { 0: 0, 1: 2, 2: 1 }
 
+# Max number of turns allowed before a draw is declared
+_MAX_REPEAT_STATES = 7
+_MAX_TURNS = 343 
+
 class Board():
     def __init__(self, n):
         self.n = n
-        self.round = 0
+        self.turn = 1
+        self.curr_move = None
         self._data = zeros((n, n), dtype=int)
+        self.history = collections.Counter({self.board.digest(): 1})
 
     def __getitem__(self, coord):
         """
@@ -66,6 +77,7 @@ class Board():
         swap_player_tokens = vectorize(lambda t: _SWAP_PLAYER[t])
         self._data = swap_player_tokens(self._data.transpose())
 
+
     def place(self, token, coord):
         """
         Place a token on the board and apply captures if they exist.
@@ -74,7 +86,7 @@ class Board():
         self[coord] = token
         return self._apply_captures(coord)
 
-    def check_win_move(self, start_coord, color):
+    def check_win_move(self, color):
         """
         Find connected coordinates from start_coord. This uses the token 
         value of the start_coord cell to determine which other cells are
@@ -82,8 +94,19 @@ class Board():
         cells, if there exist both pieces on start and finish line, return
         True as the winner.
         """
+        # start
+        if self.curr_move == None:
+            return 0
+
+        # check draw?
+        if self.turn >= _MAX_REPEAT_STATES:
+            return _EPS
+        if self.history[self.digest()] >= _MAX_REPEAT_STATES:
+            return _EPS
+
+
         # Get search token type
-        token_type = self._data[start_coord]
+        token_type = self._data[self.curr_move]
         # the position in tuple (r, q) that is 0
         start_zero_idx = 0 if color == 1 else 1
         end_n_idx = 0 if color == 1 else 1
@@ -92,7 +115,7 @@ class Board():
         # Use bfs from start coordinate
         reachable = set()
         queue = Queue(0)
-        queue.put(start_coord)
+        queue.put(self.curr_move)
         
         while not queue.empty():
             curr_coord = queue.get()
@@ -101,12 +124,19 @@ class Board():
             elif not has_end and curr_coord[end_n_idx] == self.n - 1:
                 has_end = True
             if has_start and has_end:
-                return True
+                return color
             reachable.add(curr_coord)
             for coord in self._coord_neighbours(curr_coord):
                 if coord not in reachable and self._data[coord] == token_type:
                     queue.put(coord)
-        return False
+        return 0
+
+    def digest(self):
+        """
+        Digest of the board state (to help with counting repeated states).
+        Could use a hash function, but not really necessary for our purposes.
+        """
+        return self._data.tobytes()
 
     def inside_bounds(self, coord):
         """
@@ -157,32 +187,43 @@ class Board():
     def get_legal_moves(self, color):
         """
         Returns all possible legal moves. 
-        When the current round is 2,
+        When the current turn is 2,
         the player is allowed to do an extra move type: steal
         => (-1, -1) would be added to the move set to represent it.
         """
         moves = set()
-        if self.round == 2:
-            moves.add((-1,-1))
+        if self.turn == 2:
+            action = self.n * self.n
+            move = (int(action/self.n), action%self.n)
+            moves.add(move)
         for r in range(self.n):
             for q in range(self.n):
                 if self[r][q] == 0:
                     moves.add((r,q))
+        if self.turn == 1 and self.n > 2 and self.n % 2 == 1:
+            moves.remove((self.n-1)/2,(self.n-1)/2)
         return moves
 
     def execute_move(self, move, color):
         """Perform the given move, place new token, capture or steal"""
-        
+        # move to action
+        action = move[0] * self.n + move[1] 
         # Steal
-        if move == (-1, -1):
+        if action == self.n * self.n:
             self.swap()
-            self.round += 1
+            self.turn += 1
+            self.new_move = (self.new_move[1],self.new_move[0])
+        # Convention place
         else:
             self.place(color, move)
-            if self.check_win_move(move, color):
-                return False
+            self.new_move = move
             self._apply_captures(move)
-            return True
+        
+        # digest and update history
+        self.history[self.digest()] += 1
+
+
+
             
         
 
