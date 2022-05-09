@@ -1,0 +1,333 @@
+from itertools import islice
+import logging
+import math
+from Cachex.CachexGame import CachexGame
+from Cachex.CachexLogic import Board
+import numpy as np
+
+
+EPS = 1e-8
+
+log = logging.getLogger(__name__)
+
+
+class MCTS():
+    """
+    This class handles the MCTS tree.
+    """
+
+    def __init__(self, game, nnet, args):
+        self.game = game
+        self.nnet = nnet
+        self.args = args
+        self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
+        self.Nsa = {}  # stores #times edge s,a was visited
+        self.Ns = {}  # stores #times board s was visited
+        self.Ps = {}  # stores initial policy (returned by neural net)
+
+        self.Es = {}  # stores game.getGameEnded ended for board s
+        self.Vs = {}  # stores game.getValidMoves for board s
+
+    def getActionProb(self, board, temp=1):
+        """
+        This function performs numMCTSSims simulations of MCTS starting from
+        canonicalBoard.
+
+        Returns:
+            probs: a policy vector where the probability of the ith action is
+                   proportional to Nsa[(s,a)]**(1./temp)
+        """
+        for i in range(self.args.numMCTSSims):
+            self.search(board)
+
+        ## debug
+        # for key in self.Nsa.keys():
+        #     data = np.reshape(np.frombuffer(key[0], dtype=int),[board.n,board.n])
+        #     temp_b = Board(board.n)
+        #     temp_b._data = data
+        #     CachexGame.display(CachexGame, temp_b)
+
+        s = self.game.stringRepresentation(board)
+        counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
+        
+        if temp == 0:
+            bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
+            bestA = np.random.choice(bestAs)
+            probs = [0] * len(counts)
+            probs[bestA] = 1
+            return probs
+        counts = [x ** (1. / temp) for x in counts]
+        counts_sum = float(sum(counts))
+        probs = [x / counts_sum for x in counts]
+        return probs
+
+    def search(self, board):
+        """
+        This function performs one iteration of MCTS. It is recursively called
+        till a leaf node is found. The action chosen at each node is one that
+        has the maximum upper confidence bound as in the paper.
+
+        Once a leaf node is found, the neural network is called to return an
+        initial policy P and a value v for the state. This value is propagated
+        up the search path. In case the leaf node is a terminal state, the
+        outcome is propagated up the search path. The values of Ns, Nsa, Qsa are
+        updated.
+
+        NOTE: the return values are the negative of the value of the current
+        state. This is done since v is in [-1,1] and if v is the value of a
+        state for the current player, then its value is -v for the other player.
+
+        Returns:
+            v: the negative of the value of the current canonicalBoard
+        """
+
+
+        s = self.game.stringRepresentation(board)
+
+        if s not in self.Es:
+            self.Es[s] = self.game.getGameEnded(board, 1)
+        if self.Es[s] != 0:
+            # terminal node
+            return -self.Es[s]
+
+        if s not in self.Ps:
+            # leaf node
+            self.Ps[s], v = self.nnet.predict(board._data)
+            valids = self.game.getValidMoves(board, 1)
+
+            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
+            sum_Ps_s = np.sum(self.Ps[s])
+
+            if sum_Ps_s > 0:
+                
+
+                self.Ps[s] /= sum_Ps_s  # renormalize
+            else:
+                print("self.turn: ", board.turn)
+                display(board._data, board.n)
+                # if all valid moves were masked make all valid moves equally probable
+
+                # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
+                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.   
+                log.error("All valid moves were masked, doing a workaround.")
+                self.Ps[s] = self.Ps[s] + valids
+                self.Ps[s] /= np.sum(self.Ps[s])
+
+            self.Vs[s] = valids
+            self.Ns[s] = 0
+            return -v
+
+        
+        valids = self.Vs[s]
+        cur_best = -float('inf')
+        best_act = -1
+
+        # pick the action with the highest upper confidence bound
+        for a in range(self.game.getActionSize()):
+            if valids[a]:
+                if (s, a) in self.Qsa:
+                    u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
+                            1 + self.Nsa[(s, a)])
+                else:
+                    u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+
+                if u > cur_best:
+                    cur_best = u
+                    best_act = a
+
+        a = best_act
+        if a == -1:
+            print("alert!")
+        if board.turn > 400:
+            print("-----------------------------")
+            print("a: ", a)
+            print("Vs:", self.Vs)
+            print("valids: ", valids)
+            display(board._data, board.n)
+            print("turn: ", board.turn)
+            print("curr_move: ", board.curr_move)
+            print("history: ", board.history)
+
+        next_s, next_player = self.game.getNextState(board, 1, a)
+        next_s = self.game.getCanonicalForm(next_s, next_player)
+
+        if next_s.turn > 400:
+
+            display(next_s._data, next_s.n)
+            print("turn: ", next_s.turn)
+            print("curr_move: ", next_s.curr_move)
+            print("history: ", next_s.history)
+
+        v = self.search(next_s)
+
+        if (s, a) in self.Qsa:
+            self.Qsa[(s, a)] = (self.Nsa[(s, a)] * self.Qsa[(s, a)] + v) / (self.Nsa[(s, a)] + 1)
+            self.Nsa[(s, a)] += 1
+
+        else:
+            self.Qsa[(s, a)] = v
+            self.Nsa[(s, a)] = 1
+
+        self.Ns[s] += 1
+        return -v
+
+
+# # #
+# Game display
+#
+
+def apply_ansi(str, bold=True, color=None):
+    """
+    Wraps a string with ANSI control codes to enable basic terminal-based
+    formatting on that string. Note: Not all terminals will be compatible!
+    Don't worry if you don't know what this means - this is completely
+    optional to use, and not required to complete the project!
+
+    Arguments:
+
+    str -- String to apply ANSI control codes to
+    bold -- True if you want the text to be rendered bold
+    color -- Colour of the text. Currently only red/"r" and blue/"b" are
+        supported, but this can easily be extended if desired...
+
+    """
+    bold_code = "\033[1m" if bold else ""
+    color_code = ""
+    if color == "r":
+        color_code = "\033[31m"
+    if color == "b":
+        color_code = "\033[34m"
+    return f"{bold_code}{color_code}{str}\033[0m"
+
+# Original
+
+
+def print_board(n, board_dict, message="", ansi=False, **kwargs):
+    """
+    For help with visualisation and debugging: output a board diagram with
+    any information you like (tokens, heuristic values, distances, etc.).
+
+    Arguments:
+
+    n -- The size of the board
+    board_dict -- A dictionary with (r, q) tuples as keys (following axial
+        coordinate system from specification) and printable objects (e.g.
+        strings, numbers) as values.
+        This function will arrange these printable values on a hex grid
+        and output the result.
+        Note: At most the first 5 characters will be printed from the string
+        representation of each value.
+    message -- A printable object (e.g. string, number) that will be placed
+        above the board in the visualisation. Default is "" (no message).
+    ansi -- True if you want to use ANSI control codes to enrich the output.
+        Compatible with terminals supporting ANSI control codes. Default
+        False.
+    
+    Any other keyword arguments are passed through to the print function.
+
+    Example:
+
+        >>> board_dict = {
+        ...     (0, 4): "hello",
+        ...     (1, 1): "r",
+        ...     (1, 2): "b",
+        ...     (3, 2): "$",
+        ...     (2, 3): "***",
+        ... }
+        >>> print_board(5, board_dict, "message goes here", ansi=False)
+        # message goes here
+        #              .-'-._.-'-._.-'-._.-'-._.-'-.
+        #             |     |     |     |     |     |
+        #           .-'-._.-'-._.-'-._.-'-._.-'-._.-'
+        #          |     |     |  $  |     |     |
+        #        .-'-._.-'-._.-'-._.-'-._.-'-._.-'
+        #       |     |     |     | *** |     |
+        #     .-'-._.-'-._.-'-._.-'-._.-'-._.-'
+        #    |     |  r  |  b  |     |     |
+        #  .-'-._.-'-._.-'-._.-'-._.-'-._.-'
+        # |     |     |     |     |hello| 
+        # '-._.-'-._.-'-._.-'-._.-'-._.-'
+        
+    """
+
+    stitch_pattern = ".-'-._"
+    edge_col_len = 3
+    v_divider = "|"
+    h_spacing = len(stitch_pattern)
+    output = message + "\n"
+
+    # Helper function to only selectively apply ansi formatting if enabled
+    apply_ansi_s = apply_ansi if ansi else lambda str, **_: str
+
+    # Generator to repeat pattern string (char by char) infinitely
+    def repeat(pattern):
+        while True:
+            for c in pattern:
+                yield c
+
+    # Generate stitching pattern given some offset and length
+    def stitching(offset, length):
+        return "".join(islice(repeat(stitch_pattern), offset, length))
+    # Loop through each row i from top (print ordering)
+    # Note that n - i - 1 is equivalent to r in axial coordinates
+    for i in range(n):
+        x_padding = (n - i - 1) * int(h_spacing / 2)
+        stitch_length = (n * h_spacing) - 1 + \
+            (int(h_spacing / 2) + 1 if i > 0 else 0)
+        mid_stitching = stitching(0, stitch_length)
+
+        # Handle coloured borders for ansi outputs
+        # Fairly ugly code, but there is no "simple" solution
+        if i == 0:
+            mid_stitching = apply_ansi_s(mid_stitching, color="r")
+        else:
+            mid_stitching = \
+                apply_ansi_s(mid_stitching[:edge_col_len], color="b") + \
+                mid_stitching[edge_col_len:-edge_col_len] + \
+                apply_ansi_s(
+                    mid_stitching[-edge_col_len:], color="b")
+
+        output += " " * (x_padding + 1) + mid_stitching + "\n"
+        output += " " * x_padding + \
+            apply_ansi_s(v_divider, color="b")
+
+        # Loop through each column j from left to right
+        # Note that j is equivalent to q in axial coordinates
+        for j in range(n):
+            coord = (n - i - 1, j)
+            value = str(board_dict.get(coord, ""))
+            # Leo added this if on 1st April 2022
+            c = None
+            if (len(value) > 1):
+                c = value[0]
+                value = value[1:]
+
+            contents = value.center(h_spacing - 1)
+            if ansi:
+                # Leo modified on 1st April 2022
+                # contents = apply_ansi_s(contents, color=value)
+                contents = apply_ansi_s(
+                    contents, color=(c if c else None))
+            output += contents + (v_divider if j < n - 1 else "")
+        output += apply_ansi_s(v_divider, color="b")
+        output += "\n"
+
+    # Final/lower stitching (note use of offset here)
+    stitch_length = (n * h_spacing) + int(h_spacing / 2)
+    lower_stitching = stitching(int(h_spacing / 2) - 1, stitch_length)
+    output += apply_ansi_s(lower_stitching, color="r") + "\n"
+
+    # Print to terminal (with optional args forwarded)
+    print(output, **kwargs)
+
+
+def display(canonicalBoard, n):
+    board_dict = dict()
+    for r in range(n):
+        for q in range(n):
+            coord = (r, q)
+            if canonicalBoard[coord] == -1:
+                board_dict.update({coord: "bB"})
+            elif canonicalBoard[coord] == 1:
+                board_dict.update({coord: "rR"})
+    print_board(n, board_dict, "", True)
