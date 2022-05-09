@@ -6,6 +6,7 @@ from Coach import Coach
 from Cachex.CachexGame import CachexGame as Game
 from Cachex.pytorch.NNet import NNetWrapper as nn
 from utils import *
+import os
 
 log = logging.getLogger(__name__)
 
@@ -20,18 +21,22 @@ args = dotdict({
     'numMCTSSims': 20,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 40,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1,
+    'game_size':6,
 
-    'checkpoint': './temp/',
+    'checkpoint': './temp6/',
     'load_model': False,
-    'load_folder_file': ('/dev/models/8x100x50','best.pth.tar'),
+    'load_folder_file': ('./temp6/','best.pth.tar'),
     'numItersForTrainExamplesHistory': 20,
 
 })
 
 
 def main():
+    if not os.path.exists(args.checkpoint):
+        os.makedirs(args.checkpoint)
+
     log.info('Loading %s...', Game.__name__)
-    g = Game(5)
+    g = Game(args.game_size)
 
     log.info('Loading %s...', nn.__name__)
     nnet = nn(g)

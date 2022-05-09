@@ -39,7 +39,6 @@ class MCTS():
         """
         for i in range(self.args.numMCTSSims):
             self.search(board)
-
         ## debug
         # for key in self.Nsa.keys():
         #     data = np.reshape(np.frombuffer(key[0], dtype=int),[board.n,board.n])
@@ -87,23 +86,19 @@ class MCTS():
         if s not in self.Es:
             self.Es[s] = self.game.getGameEnded(board, 1)
         if self.Es[s] != 0:
-            # terminal node
+            # end, terminal node
             return -self.Es[s]
 
         if s not in self.Ps:
             # leaf node
             self.Ps[s], v = self.nnet.predict(board._data)
             valids = self.game.getValidMoves(board, 1)
-
             self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
             sum_Ps_s = np.sum(self.Ps[s])
 
             if sum_Ps_s > 0:
-                
-
                 self.Ps[s] /= sum_Ps_s  # renormalize
             else:
-                print("self.turn: ", board.turn)
                 display(board._data, board.n)
                 # if all valid moves were masked make all valid moves equally probable
 
@@ -138,25 +133,17 @@ class MCTS():
         a = best_act
         if a == -1:
             print("alert!")
-        if board.turn > 400:
+        if board.turn > 343:
             print("-----------------------------")
             print("a: ", a)
-            print("Vs:", self.Vs)
             print("valids: ", valids)
             display(board._data, board.n)
             print("turn: ", board.turn)
-            print("curr_move: ", board.curr_move)
-            print("history: ", board.history)
+            return -v
+
 
         next_s, next_player = self.game.getNextState(board, 1, a)
-        next_s = self.game.getCanonicalForm(next_s, next_player)
-
-        if next_s.turn > 400:
-
-            display(next_s._data, next_s.n)
-            print("turn: ", next_s.turn)
-            print("curr_move: ", next_s.curr_move)
-            print("history: ", next_s.history)
+        next_s.swap()
 
         v = self.search(next_s)
 

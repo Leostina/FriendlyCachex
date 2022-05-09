@@ -1,165 +1,113 @@
-import collections
-# from ctypes.wintypes import HINSTANCE
 from itertools import islice
-from queue import Queue
-import numpy as np
-from numpy import zeros, array, roll, vectorize
-from sqlalchemy import false
+import logging
+from cachetools import Cache
+from Cachex.CachexLogic import Board
+from MCTS import MCTS
+from Cachex.CachexGame import CachexGame
+from Cachex.CachexPlayers import *
+from Cachex.pytorch.NNet import NNetWrapper as NNet
 
-# Very small number
-_EPS = 1e-8
+from tqdm import tqdm
 
-# Utility function to add two coord tuples
-_ADD = lambda a, b: (a[0] + b[0], a[1] + b[1])
+from utils import dotdict
 
-# Neighbour hex steps in clockwise order
-_HEX_STEPS = array([(1, -1), (1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1)], 
-    dtype="i,i")
+log = logging.getLogger(__name__)
 
-# Pre-compute diamond capture patterns - each capture pattern is a 
-# list of offset steps:
-# [opposite offset, neighbour 1 offset, neighbour 2 offset]
-#
-# Note that the "opposite cell" offset is actually the sum of
-# the two neighbouring cell offsets (for a given diamond formation)
-#
-# Formed diamond patterns are either "longways", in which case the
-# neighbours are adjacent to each other (roll 1), OR "sideways", in
-# which case the neighbours are spaced apart (roll 2). This means
-# for a given cell, it is part of 6 + 6 possible diamonds.
-_CAPTURE_PATTERNS = [[_ADD(n1, n2), n1, n2] 
-    for n1, n2 in 
-        list(zip(_HEX_STEPS, roll(_HEX_STEPS, 1))) + 
-        list(zip(_HEX_STEPS, roll(_HEX_STEPS, 2)))]
 
-# Maps between player string and internal token type
-_TOKEN_MAP_OUT = { 0: None, 1: "red", -1: "blue" }
-_TOKEN_MAP_IN = {v: k for k, v in _TOKEN_MAP_OUT.items()}
+class ArenavP():
+    """
+    An Arena class where any 2 agents can be pit against each other.
+    """
 
-# Map between player token types
-_SWAP_PLAYER = { 0: 0, 1: -1, -1: 1 }
-
-# Max number of turns allowed before a draw is declared
-_MAX_REPEAT_STATES = 7
-_MAX_TURNS = 343 
-
-class Board():
-    def __init__(self, n):
-        self.n = n
-        self.turn = 1
-        self._data = zeros((n, n), dtype=int)
-        self.history = collections.Counter({self._data.tobytes() : 1})
-
-    def __getitem__(self, coord):
+    def __init__(self, player1, game, display=None):
         """
-        Get the token at given board coord (r, q).
-        """
-        return self._data[coord]
+        Input:
+            player 1,2: two functions that takes board as input, return action
+            game: Game object
+            display: a function that takes board as input and prints it (e.g.
+                     display in cachex/CachexGame). Is necessary for verbose
+                     mode.
 
-    def __setitem__(self, coord, token):
+        see cachex/CachexPlayers.py for an example. See pit.py for pitting
+        human players/other baselines with each other.
         """
-        Set the token at given board coord (r, q).
-        """
-        self._data[coord] = token
+        self.player1 = player1
+        self.game = game
+        self.display = display
 
-    def digest(self):
+    def playGame(self, verbose=False):
         """
-        Digest of the board state (to help with counting repeated states).
-        Could use a hash function, but not really necessary for our purposes.
-        """
-        return self._data.tobytes()
+        Executes one episode of a game.
 
-    def swap(self):
+        Returns:
+            either
+                winner: player who won the game (1 if player1, -1 if player2)
+            or
+                draw result returned from the game that is neither 1, -1, nor 0.
         """
-        Swap player positions by mirroring the state along the major 
-        board axis. This is really just a "matrix transpose" op combined
-        with a swap between player token types.
-        """
-        swap_player_tokens = vectorize(lambda t: _SWAP_PLAYER[t])
-        self._data = swap_player_tokens(self._data.transpose())
+        aiPlayer = self.player1
+        curPlayer = 1
+        board = self.game.getInitBoard()
+        it = 0
+        humanTurn = False
+        while self.game.getGameEnded(board, curPlayer) == 0:
+            it += 1
+            if humanTurn:
+                action = tuple([int(c) for c in input("Please enter your move, format as 'rq'. (e.g., 04 means place a token at pos row = 0, col = 4)  \ncq: ")])
+                action = board.n*action[0]+action[1]
+            else:
+                action = aiPlayer(self.game.getCanonicalForm(board, curPlayer))
+                print("AI Action: ", (int(action/board.n), action % board.n))
+                display_true(board._data, board.n,False)
+            valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer), 1)
+            if valids[action] == 0:
+                log.error(f'Action {action} is not valid!')
+                log.debug(f'valids = {valids}')
+                assert valids[action] > 0
+            board, curPlayer = self.game.getNextState(board, curPlayer, action)
+            humanTurn = not humanTurn
+        if verbose:
+            # assert display(board._data, board.n)
+            print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
+            display_true(board._data, board.n, True if humanTurn else False)
+        return curPlayer * self.game.getGameEnded(board, curPlayer)
 
+    def playGames(self, num, verbose=False):
+        """
+        Plays num games in which player1 starts num/2 games and player2 starts
+        num/2 games.
 
-    def place(self, token, coord):
+        Returns:
+            oneWon: games won by player1
+            twoWon: games won by player2
+            draws:  games won by nobody
         """
-        Place a token on the board and apply captures if they exist.
-        Return coordinates of captured tokens.
-        """
-        self[coord] = token
-        return self._apply_captures(coord)
 
-    def digest(self):
-        """
-        Digest of the board state (to help with counting repeated states).
-        Could use a hash function, but not really necessary for our purposes.
-        """
-        return self._data.tobytes()
+        num = int(num / 2)
+        oneWon = 0
+        twoWon = 0
+        draws = 0
+        for _ in tqdm(range(num), desc="Arena.playGames (1)"):
+            gameResult = self.playGame(verbose=verbose)
+            if gameResult == 1:
+                oneWon += 1
+            elif gameResult == -1:
+                twoWon += 1
+            else:
+                draws += 1
 
-    def inside_bounds(self, coord):
-        """
-        True iff coord inside board bounds.
-        """
-        r, q = coord
-        return r >= 0 and r < self.n and q >= 0 and q < self.n
+        self.player1, self.player2 = self.player2, self.player1
 
-    def is_occupied(self, coord):
-        """
-        True iff coord is occupied by a token (e.g., not None).
-        """
-        return self._data[coord] != None
+        for _ in tqdm(range(num), desc="Arena.playGames (2)"):
+            gameResult = self.playGame(verbose=verbose)
+            if gameResult == -1:
+                oneWon += 1
+            elif gameResult == 1:
+                twoWon += 1
+            else:
+                draws += 1
 
-    def _apply_captures(self, coord):
-        """
-        Check coord for diamond captures, and apply these to the board
-        if they exist. Returns a list of captured token coordinates.
-        """
-        opp_type = self._data[coord]
-        mid_type = _SWAP_PLAYER[opp_type]
-        captured = set()
-
-        # Check each capture pattern intersecting with coord
-        for pattern in _CAPTURE_PATTERNS:
-            coords = [_ADD(coord, s) for s in pattern]
-            # No point checking if any coord is outside the board!
-            if all(map(self.inside_bounds, coords)):
-                tokens = [self._data[coord] for coord in coords]
-                if tokens == [opp_type, mid_type, mid_type]:
-                    # Capturing has to be deferred in case of overlaps
-                    # Both mid cell tokens should be captured
-                    captured.update(coords[1:])
-
-        # Remove any captured tokens
-        for coord in captured:
-            self._data[coord] = 0
-        return list(captured)
-
-    def _coord_neighbours(self, coord):
-        """
-        Returns (within-bounds) neighbouring coordinates for given coord.
-        """
-        return [_ADD(coord, step) for step in _HEX_STEPS \
-            if self.inside_bounds(_ADD(coord, step))]
-
-    def execute_move(self, action, color):
-        """Perform the given move, place new token, capture or steal"""
-        # Steal
-        if action == self.n * self.n:
-            self.swap()
-        # Convention place
-        else:
-            move = (int(action/self.n), action % self.n)
-            self.place(color, move)
-            self._apply_captures(move)
-        
-        # digest and update history
-        self.turn += 1
-        self.history[self.digest()] += 1
-
-    def deep_copy(self):
-        b = Board(self.n)
-        b.turn = self.turn
-        b._data = np.copy(self._data)
-        b.history = self.history.copy()
-        return b
+        return oneWon, twoWon, draws
 
 
 # # #
@@ -311,14 +259,26 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
     print(output, **kwargs)
 
 
-def display(canonicalBoard, n):
+def display_true(canonicalBoard, n, invert):
+    disp = np.copy(canonicalBoard)
     board_dict = dict()
     for r in range(n):
         for q in range(n):
             coord = (r, q)
-            if canonicalBoard[coord] == -1:
-                board_dict.update({coord: "bB"})
-            elif canonicalBoard[coord] == 1:
-                board_dict.update({coord: "rR"})
+            if disp[coord] == -1:
+                board_dict.update({coord: "rR" if invert else "bB"})
+            elif disp[coord] == 1:
+                board_dict.update({coord: "bB" if invert else "rR"})
     print_board(n, board_dict, "", True)
-    print(np.array(list(reversed(canonicalBoard))))
+
+
+g = CachexGame(5)
+n1 = NNet(g)
+n1.load_checkpoint( folder='./temp5/', filename='best.pth.tar')
+args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
+mcts1 = MCTS(g, n1, args1)
+n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
+
+
+arena = ArenavP(n1p,g,display=CachexGame.display)
+print(arena.playGame(True))

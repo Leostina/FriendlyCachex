@@ -4,6 +4,11 @@ import numpy as np
 from .CachexLogic import *
 from Game import Game
 
+# Very small number
+_EPS = 1e-8
+_MAX_REPEAT_STATES = 7
+_MAX_TURNS = 343 
+
 class CachexGame(Game):
     content_lookup = {-1: "B", 0: "-", 1:"R"}
     
@@ -46,10 +51,38 @@ class CachexGame(Game):
             moves[int((board.n*board.n-1)/2)] = 0
         return np.array(moves)
             
-    def getGameEnded(self, board, player):
+    def getGameEnded(self, board:Board, player):
         # return 0 if not ended, 1 if player 1 won, -1 if player 1 lost, small non-zero val for draw
         # player = 1
-        return board.check_win_move(player)
+        # dfs
+
+        # draw?
+        if board.turn >= _MAX_TURNS or any(np.array(list(board.history.values()))>=_MAX_REPEAT_STATES):
+            return _EPS
+        # winner?
+        frontier = [(r,0) for r in range(board.n) if board._data[r, 0] == -player]
+        explored = set()
+        while (len(frontier)):
+            curr_coord = frontier.pop()
+            explored.add(curr_coord)
+            for coord in board._coord_neighbours(curr_coord):
+                if coord not in explored and board._data[coord] == -player:
+                    if coord[1] == board.n- 1 :
+                        return -player
+                    frontier.append(coord)
+
+        frontier = [(0,q) for q in range(board.n) if board._data[0,q] == player]
+        explored = set()
+        while (len(frontier)):
+            curr_coord = frontier.pop()
+            explored.add(curr_coord)
+            for coord in board._coord_neighbours(curr_coord):
+                if coord not in explored and board._data[coord] == player:
+                    if coord[0] == board.n - 1:
+                        return player
+                    frontier.append(coord)
+
+        return 0
 
     def getCanonicalForm(self, board, player):
         # return state if player==1, else return -state if player==-1

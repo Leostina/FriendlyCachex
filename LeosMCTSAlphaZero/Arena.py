@@ -45,7 +45,7 @@ class Arena():
         while self.game.getGameEnded(board, curPlayer) == 0:
             it += 1
             if verbose:
-                assert display(board._data, board.n)
+                # assert display(board._data, board.n)
                 print("Turn ", str(it), "Player ", str(curPlayer))
                 display(board._data, board.n)
             action = players[curPlayer + 1](self.game.getCanonicalForm(board, curPlayer))
@@ -58,12 +58,12 @@ class Arena():
                 assert valids[action] > 0
             board, curPlayer = self.game.getNextState(board, curPlayer, action)
         if verbose:
-            assert display(board._data, board.n)
+            # assert display(board._data, board.n)
             print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
             display(board._data, board.n)
         return curPlayer * self.game.getGameEnded(board, curPlayer)
 
-    def playGames(self, num, verbose=True):
+    def playGames(self, num, verbose=False):
         """
         Plays num games in which player1 starts num/2 games and player2 starts
         num/2 games.
