@@ -28,20 +28,24 @@ class CachexGame(Game):
         return self.n*self.n + 1
 
     def getNextState(self, board, player, action):
+        b = board.deep_copy()
         # action must be a valid move
-        move = (int(action/self.n), action%self.n)
-        board.execute_move(move, player)
+        b.execute_move(action, player)
         # switch player
-        return (board, -player) 
+        return (b, -player) 
     
     def getValidMoves(self, board, player):
-        # return a fixed size binary vector
-        valids = [0]*self.getActionSize()
-        legalMoves =  board.get_legal_moves(player)
-        for r, q in legalMoves:
-            valids[self.n*r+q]=1
-        return np.array(valids)
-
+        moves = (board.n*board.n+1)*[0]
+        for r in range(board.n):
+            for q in range(board.n):
+                if board._data[r][q] == 0:
+                    moves[board.n*r+q] = 1
+        if board.turn == 2:
+            moves[-1] = 1
+        elif board.turn == 1 and board.n > 2 and board.n % 2 == 1:
+            moves[int((board.n*board.n-1)/2)] = 0
+        return np.array(moves)
+            
     def getGameEnded(self, board, player):
         # return 0 if not ended, 1 if player 1 won, -1 if player 1 lost, small non-zero val for draw
         # player = 1
@@ -67,8 +71,11 @@ class CachexGame(Game):
         return l
 
     
-    def stringRepresentation(self, canonicalBoard):
-        return canonicalBoard.tostring()
+    def stringRepresentation(self, board:Board):
+        specode = board.turn
+        if specode != 1 and specode != 2:
+            specode = 3
+        return (board._data+specode).tobytes()
 
     def stringRepresentationReadable(self, canonicalBoard):
         board_s = "".join(self.content_lookup[cell] for r in canonicalBoard for cell in r)
@@ -85,7 +92,7 @@ class CachexGame(Game):
     # # #
     # Game display
     #
-    def apply_ansi(str, bold=True, color=None):
+    def apply_ansi(self, str, bold=True, color=None):
         """
         Wraps a string with ANSI control codes to enable basic terminal-based
         formatting on that string. Note: Not all terminals will be compatible!
@@ -112,7 +119,7 @@ class CachexGame(Game):
 
 
     # Original
-    def print_board(n, board_dict, message="", ansi=False, **kwargs):
+    def print_board(self, n, board_dict, message="", ansi=False, **kwargs):
         """
         For help with visualisation and debugging: output a board diagram with
         any information you like (tokens, heuristic values, distances, etc.).
@@ -167,7 +174,7 @@ class CachexGame(Game):
         output = message + "\n"
 
         # Helper function to only selectively apply ansi formatting if enabled
-        apply_ansi_s = apply_ansi if ansi else lambda str, **_: str
+        apply_ansi_s = self.apply_ansi if ansi else lambda str, **_: str
 
         # Generator to repeat pattern string (char by char) infinitely
         def repeat(pattern):
@@ -190,15 +197,15 @@ class CachexGame(Game):
             # Handle coloured borders for ansi outputs
             # Fairly ugly code, but there is no "simple" solution
             if i == 0:
-                mid_stitching = apply_ansi_s(mid_stitching, color="r")
+                mid_stitching = apply_ansi_s(self, mid_stitching, color="r")
             else:
                 mid_stitching = \
-                    apply_ansi_s(mid_stitching[:edge_col_len], color="b") + \
+                    apply_ansi_s(self,mid_stitching[:edge_col_len], color="b") + \
                     mid_stitching[edge_col_len:-edge_col_len] + \
-                    apply_ansi_s(mid_stitching[-edge_col_len:], color="b")
+                    apply_ansi_s(self,mid_stitching[-edge_col_len:], color="b")
 
             output += " " * (x_padding + 1) + mid_stitching + "\n"
-            output += " " * x_padding + apply_ansi_s(v_divider, color="b")
+            output += " " * x_padding + apply_ansi_s(self, v_divider, color="b")
 
             # Loop through each column j from left to right
             # Note that j is equivalent to q in axial coordinates
@@ -215,21 +222,21 @@ class CachexGame(Game):
                 if ansi:
                     # Leo modified on 1st April 2022
                     # contents = apply_ansi_s(contents, color=value)
-                    contents = apply_ansi_s(contents, color=(c if c else None))
+                    contents = apply_ansi_s(self,contents, color=(c if c else None))
                 output += contents + (v_divider if j < n - 1 else "")
-            output += apply_ansi_s(v_divider, color="b")
+            output += apply_ansi_s(self,v_divider, color="b")
             output += "\n"
         
         # Final/lower stitching (note use of offset here)
         stitch_length = (n * h_spacing) + int(h_spacing / 2)
         lower_stitching = stitching(int(h_spacing / 2) - 1, stitch_length)
-        output += apply_ansi_s(lower_stitching, color="r") + "\n"
+        output += apply_ansi_s(self,lower_stitching, color="r") + "\n"
 
         # Print to terminal (with optional args forwarded)
         print(output, **kwargs)
 
-
-    def display(board:Board):
+    @staticmethod
+    def display(self, board:Board):
         board_dict = dict()
         for r in range(board.n):
             for q in range(board.n ):
@@ -238,4 +245,5 @@ class CachexGame(Game):
                     board_dict.update({coord:"bB"})
                 elif board._data[coord] == 1:
                     board_dict.update({coord:"rR"})
-        print_board(board.n, board_dict, "", True)
+        self.print_board(self, board.n, board_dict, "", True)
+

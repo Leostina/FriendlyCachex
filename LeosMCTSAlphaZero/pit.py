@@ -1,8 +1,9 @@
+from cachetools import Cache
 import Arena
 from MCTS import MCTS
-from othello.OthelloGame import OthelloGame
-from othello.OthelloPlayers import *
-from othello.pytorch.NNet import NNetWrapper as NNet
+from Cachex.CachexGame import CachexGame
+from Cachex.CachexPlayers import *
+from Cachex.pytorch.NNet import NNetWrapper as NNet
 
 
 import numpy as np
@@ -17,9 +18,9 @@ mini_othello = False  # Play in 6x6 instead of the normal 8x8.
 human_vs_cpu = True
 
 if mini_othello:
-    g = OthelloGame(6)
+    g = CachexGame(6)
 else:
-    g = OthelloGame(8)
+    g = CachexGame(8)
 
 # all players
 rp = RandomPlayer(g).play
