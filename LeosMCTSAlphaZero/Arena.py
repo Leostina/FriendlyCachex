@@ -1,6 +1,7 @@
 from itertools import islice
 import logging
-
+from Cachex.CachexLogic import Board
+import numpy as np
 from tqdm import tqdm
 
 log = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ class Arena():
         self.game = game
         self.display = display
 
-    def playGame(self, verbose=False):
+    def playGame(self, verbose=True):
         """
         Executes one episode of a game.
 
@@ -47,7 +48,7 @@ class Arena():
             if verbose:
                 # assert display(board._data, board.n)
                 print("Turn ", str(it), "Player ", str(curPlayer))
-                display(board._data, board.n)
+                # display(board._data, board.n)
             action = players[curPlayer + 1](self.game.getCanonicalForm(board, curPlayer))
 
             valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer), 1)
@@ -57,13 +58,18 @@ class Arena():
                 log.debug(f'valids = {valids}')
                 assert valids[action] > 0
             board, curPlayer = self.game.getNextState(board, curPlayer, action)
+            #!!! debug !!!
+            # display(board._data, board.n, (it % 2 == 0))
+            board.swap_pos()
+
+        # print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, curPlayer)))
         if verbose:
             # assert display(board._data, board.n)
-            print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
-            display(board._data, board.n)
-        return curPlayer * self.game.getGameEnded(board, curPlayer)
+            print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, curPlayer)))
+            # display(board._data, board.n)
+        return self.game.getGameEnded(board, curPlayer)
 
-    def playGames(self, num, verbose=False):
+    def playGames(self, num, verbose=True):
         """
         Plays num games in which player1 starts num/2 games and player2 starts
         num/2 games.
@@ -250,13 +256,18 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
     print(output, **kwargs)
 
 
-def display(canonicalBoard, n):
+def display(canonicalBoard, n, swap = False):
+    b = Board(n)
+    b._data = np.copy(canonicalBoard)
+    if swap:
+        b._data = b._data.transpose()
+    
     board_dict = dict()
     for r in range(n):
         for q in range(n):
             coord = (r, q)
-            if canonicalBoard[coord] == -1:
+            if b._data[coord] == -1:
                 board_dict.update({coord: "bB"})
-            elif canonicalBoard[coord] == 1:
+            elif b._data[coord] == 1:
                 board_dict.update({coord: "rR"})
     print_board(n, board_dict, "", True)

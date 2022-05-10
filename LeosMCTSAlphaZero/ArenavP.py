@@ -45,32 +45,42 @@ class ArenavP():
             or
                 draw result returned from the game that is neither 1, -1, nor 0.
         """
+        players = ["AI","NONE","HUMAN"]
         aiPlayer = self.player1
         curPlayer = 1
         board = self.game.getInitBoard()
         it = 0
-        humanTurn = False
+        display(board._data, board.n)
         while self.game.getGameEnded(board, curPlayer) == 0:
             it += 1
-            if humanTurn:
+            if verbose:
+                # assert display(board._data, board.n)
+                print("Turn ", str(it), "Player ", str(curPlayer))
+                # display(board._data, board.n)
+            
+            if players[curPlayer+1] == "HUMAN" :
                 action = tuple([int(c) for c in input("Please enter your move, format as 'rq'. (e.g., 04 means place a token at pos row = 0, col = 4)  \ncq: ")])
                 action = board.n*action[0]+action[1]
+
             else:
                 action = aiPlayer(self.game.getCanonicalForm(board, curPlayer))
-                print("AI Action: ", (int(action/board.n), action % board.n))
-                display_true(board._data, board.n,False)
+                print("The friendly AI's Action: ", (int(action/board.n), action % board.n))
+                # display_true(board._data, board.n,False)
             valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer), 1)
             if valids[action] == 0:
                 log.error(f'Action {action} is not valid!')
                 log.debug(f'valids = {valids}')
                 assert valids[action] > 0
             board, curPlayer = self.game.getNextState(board, curPlayer, action)
-            humanTurn = not humanTurn
+            display(board._data, board.n, (it % 2 == 0))
+            board.swap_pos()
         if verbose:
-            # assert display(board._data, board.n)
-            print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
-            display_true(board._data, board.n, True if humanTurn else False)
-        return curPlayer * self.game.getGameEnded(board, curPlayer)
+            if self.game.getGameEnded(board, curPlayer) == 1:
+                print("You win!")
+            else:
+                print("The Friendly AI winned!")
+
+        return self.game.getGameEnded(board, curPlayer)
 
     def playGames(self, num, verbose=False):
         """
@@ -259,22 +269,27 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
     print(output, **kwargs)
 
 
-def display_true(canonicalBoard, n, invert):
-    disp = np.copy(canonicalBoard)
+def display(canonicalBoard, n, swap = False):
+    b = Board(n)
+    b._data = np.copy(canonicalBoard)
+    if swap:
+        b._data = b._data.transpose()
+    
     board_dict = dict()
     for r in range(n):
         for q in range(n):
             coord = (r, q)
-            if disp[coord] == -1:
-                board_dict.update({coord: "rR" if invert else "bB"})
-            elif disp[coord] == 1:
-                board_dict.update({coord: "bB" if invert else "rR"})
+            if b._data[coord] == -1:
+                board_dict.update({coord: "bB"})
+            elif b._data[coord] == 1:
+                board_dict.update({coord: "rR"})
     print_board(n, board_dict, "", True)
 
 
-g = CachexGame(5)
+
+g = CachexGame(6)
 n1 = NNet(g)
-n1.load_checkpoint( folder='./temp5/', filename='best.pth.tar')
+n1.load_checkpoint( folder='./temp6/', filename='best.pth.tar')
 args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
 mcts1 = MCTS(g, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))

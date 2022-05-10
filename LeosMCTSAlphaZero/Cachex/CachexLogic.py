@@ -79,6 +79,9 @@ class Board():
         self._data = swap_player_tokens(self._data.transpose())
 
 
+    def swap_pos(self):
+        self._data = self._data.transpose()
+
     def place(self, token, coord):
         """
         Place a token on the board and apply captures if they exist.
