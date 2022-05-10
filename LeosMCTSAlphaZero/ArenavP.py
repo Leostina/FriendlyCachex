@@ -1,5 +1,6 @@
 from itertools import islice
 import logging
+import sys
 from cachetools import Cache
 from Cachex.CachexLogic import Board
 from MCTS import MCTS
@@ -285,11 +286,10 @@ def display(canonicalBoard, n, swap = False):
                 board_dict.update({coord: "rR"})
     print_board(n, board_dict, "", True)
 
-
-
-g = CachexGame(6)
+N = int(sys.argv[1])
+g = CachexGame(N)
 n1 = NNet(g)
-n1.load_checkpoint( folder='./temp6/', filename='best.pth.tar')
+n1.load_checkpoint( folder='./temp'+str(N)+"/", filename='best.pth.tar')
 args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
 mcts1 = MCTS(g, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
