@@ -24,7 +24,7 @@ class Player:
         self.color = 1 if player == "red" else -1
         self.n = n
         self.g = CachexGame(n, self.color)
-        self.sim_iter = 300
+        self.sim_iter = 500
         self.mcts = MCTS(self.g, self.sim_iter)
         self.eval = lambda x: np.argmax(self.mcts.getActionProb(x, temp=0))
 

@@ -67,7 +67,7 @@ class MCTS():
         while(1):
             v = self.game.getGameEnded(board, self.game.color)
             if v != 0:
-                return v 
+                return -v 
             
             a = np.random.choice(self.game.getValidMoves(board, next_player))
             board, next_player = self.game.getNextState(board, next_player, a)
