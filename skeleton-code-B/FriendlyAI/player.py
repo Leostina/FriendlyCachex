@@ -24,7 +24,7 @@ class Player:
         self.color = 1 if player == "red" else -1
         self.n = n
         self.g = CachexGame(n, self.color)
-        self.sim_iter = 500
+        self.sim_iter = 200 if n < 5 else 500
         self.mcts = MCTS(self.g, self.sim_iter)
         self.eval = lambda x: np.argmax(self.mcts.getActionProb(x, temp=0))
 
@@ -41,7 +41,6 @@ class Player:
         # convert to coord        
         action = ("STEAL", ) if a == self.n*self.n else ("PLACE", int(a/self.n), int(a % self.n))
         
-
         return action
 
     def turn(self, player, action):
