@@ -27,6 +27,8 @@ class MCTS():
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
 
+
+
     def getActionProb(self, board, temp=1):
         """
         This function performs sim_iter simulations of MCTS starting from
@@ -59,6 +61,17 @@ class MCTS():
         probs = [x / counts_sum for x in counts]
         return probs
 
+
+    def rollout(self, board, curr_player):
+        next_player = curr_player
+        while(1):
+            v = self.game.getGameEnded(board, self.game.color)
+            if v != 0:
+                return v 
+            
+            a = np.random.choice(self.game.getValidMoves(board, next_player))
+            board, next_player = self.game.getNextState(board, next_player, a)
+
     def search(self, board):
 
         s = self.game.stringRepresentation(board)
@@ -71,9 +84,11 @@ class MCTS():
 
         if s not in self.Ps:
             # !!! Replace self.Ps[s], v = self.nnet.predict(board._data)
-            self.Ps[s], v = np.array((self.game.n*self.game.n+1 )*[EPS]), np.array([0])
-
+            
             valids = self.game.getValidMoves(board, 1)
+            
+            self.Ps[s], v = np.array((self.game.n*self.game.n+1 )*[EPS]), self.rollout(board, 1)
+
             self.Ps[s] = self.Ps[s] * valids 
             sum_Ps_s = np.sum(self.Ps[s])
             

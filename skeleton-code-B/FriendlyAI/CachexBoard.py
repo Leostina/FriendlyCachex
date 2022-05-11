@@ -1,10 +1,7 @@
 import collections
-# from ctypes.wintypes import HINSTANCE
 from itertools import islice
-from queue import Queue
 import numpy as np
 from numpy import zeros, array, roll, vectorize
-from sqlalchemy import false
 
 # Very small number
 _EPS = 1e-8
