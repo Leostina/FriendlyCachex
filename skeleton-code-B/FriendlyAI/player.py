@@ -1,3 +1,12 @@
+import CachexLogic
+import CachexGame
+import CachexNNet
+import numpy as np
+from utils import dotdict
+# from NNet import NNetWrapper as NNet
+import MCTS
+
+from CachexLogic import Board
 
 class Player:
     def __init__(self, player, n):
@@ -9,7 +18,12 @@ class Player:
         play as Red, or the string "blue" if your player will play
         as Blue.
         """
-        # put your code here
+        # first turn starts from 1 or 2
+        self.g = CachexGame(n)
+        self.color = 1 if player == "red" else -1
+        self.args1 = dotdict({'numMCTSSims': 1000, 'cpuct':1.0})
+        self.mcts = MCTS(self.g, self.args1)
+        self.eval = lambda x: np.argmax(self.mcts.getActionProb(x, temp=0))
 
     def action(self):
         """
@@ -17,7 +31,8 @@ class Player:
         of the game, select an action to play.
         """
         # put your code here
-    
+        a = eval(self.g.getCanonicalForm())
+
     def turn(self, player, action):
         """
         Called at the end of each player's turn to inform this player of 
@@ -30,4 +45,5 @@ class Player:
         above. However, the referee has validated it at this point.
         """
         # put your code here
+        self.g.board.execute_move(action, self.color)
 

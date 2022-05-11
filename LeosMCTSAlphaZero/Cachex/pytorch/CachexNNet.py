@@ -16,11 +16,6 @@ class CachexNNet(nn.Module):
         self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
         self.args = args
-        self.ksize = 3
-        if self.board_x < 5:
-            self.ksize = 2
-        if self.board_x < 4:
-            self.ksize = 1
 
         super(CachexNNet, self).__init__()
         self.conv1 = nn.Conv2d(1, args.num_channels, 3, stride=1, padding=1)

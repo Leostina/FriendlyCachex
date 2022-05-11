@@ -1,6 +1,6 @@
 from itertools import islice
 import logging
-import sys
+import time
 from cachetools import Cache
 from Cachex.CachexLogic import Board
 from MCTS import MCTS
@@ -286,14 +286,17 @@ def display(canonicalBoard, n, swap = False):
                 board_dict.update({coord: "rR"})
     print_board(n, board_dict, "", True)
 
-N = int(sys.argv[1])
+N = 5
 g = CachexGame(N)
 n1 = NNet(g)
-n1.load_checkpoint( folder='./temp'+str(N)+"/", filename='best.pth.tar')
-args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
+n1.load_checkpoint(folder="H:\COMP30024\\repo\FriendlyCachex\LeosMCTSAlphaZero\\temp5\\", filename='best.pth.tar')
+args1 = dotdict({'numMCTSSims': 1000, 'cpuct':1.0})
 mcts1 = MCTS(g, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
 
-
+t0 = time.time()
 arena = ArenavP(n1p,g,display=CachexGame.display)
+duration = time.time()-t0
+print("Total time used: ", duration)
+
 print(arena.playGame(True))

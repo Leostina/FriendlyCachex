@@ -7,6 +7,7 @@ from random import shuffle
 
 import numpy as np
 from tqdm import tqdm
+import shutil
 
 from Arena import Arena
 from MCTS import MCTS
@@ -27,6 +28,7 @@ class Coach():
         self.args = args
         self.mcts = MCTS(self.game, self.nnet, self.args)
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
+        self.trainHistory = [] 
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
 
     def executeEpisode(self):
@@ -76,6 +78,11 @@ class Coach():
         It then pits the new neural network against the old one and accepts it
         only if it wins >= updateThreshold fraction of games.
         """
+        # files = os.listdir(self.args.checkpoint)
+        # ex_files = sorted([f for f in files if f.endswith(".examples")])[:-5]
+        # ex_files = set(ex_files []
+        # print(ex_files)
+        # exit(1)
 
         for i in range(1, self.args.numIters + 1):
             # bookkeeping
@@ -126,6 +133,9 @@ class Coach():
                 log.info('ACCEPTING NEW MODEL')
                 self.nnet.save_checkpoint(folder=self.args.checkpoint, filename=self.getCheckpointFile(i))
                 self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='best.pth.tar')
+                # shutil.copyfile(str(os.path.join(self.args.checkpoint,self.getCheckpointFile(i)))+".examples", self.args.checkpoint+"best.pth.tar.examples")
+
+
 
     def getCheckpointFile(self, iteration):
         return 'checkpoint_' + str(iteration) + '.pth.tar'

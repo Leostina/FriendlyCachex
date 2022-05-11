@@ -91,7 +91,16 @@ class MCTS():
 
         if s not in self.Ps:
             # leaf node
-            self.Ps[s], v = self.nnet.predict(board._data)
+            self.Ps[s], v = np.array((self.game.n*self.game.n+1 )*[EPS]), np.array([0])
+            # self.Ps[s], v = self.nnet.predict(board._data)
+            # print(self.Ps[s])
+            # print(len(self.Ps[s]))
+            # print(v)
+            # print("-------------------")
+            # print(no1)
+            # print(len(no1))
+            # print(no2)
+            # print("===================")
             valids = self.game.getValidMoves(board, 1)
             self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
             sum_Ps_s = np.sum(self.Ps[s])
