@@ -15,14 +15,14 @@ class CachexGame(Game):
     def getPieceContent(piece):
         return CachexGame.content_lookup[piece]
 
-    def __init__(self, n, color):
-        self.n = n
-        self.board = self.getInitBoard(n, color)
-        
     def getInitBoard(self, color):
         # return the board at init
         board = Board(self.n)
         return board
+
+    def __init__(self, n, color):
+        self.n = n
+        self.board = self.getInitBoard(n, color)
 
     def getBoardSize(self):
         # return initial board

@@ -19,8 +19,8 @@ class Player:
         as Blue.
         """
         # first turn starts from 1 or 2
-        self.g = CachexGame(n)
         self.color = 1 if player == "red" else -1
+        self.g = CachexGame(n, self.color)
         self.args1 = dotdict({'numMCTSSims': 1000, 'cpuct':1.0})
         self.mcts = MCTS(self.g, self.args1)
         self.eval = lambda x: np.argmax(self.mcts.getActionProb(x, temp=0))
@@ -31,7 +31,7 @@ class Player:
         of the game, select an action to play.
         """
         # put your code here
-        a = eval(self.g.getCanonicalForm())
+        a = self.eval(self.g.getCanonicalForm(self.g.board, self.color))
 
     def turn(self, player, action):
         """
