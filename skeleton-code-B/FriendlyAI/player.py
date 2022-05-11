@@ -1,15 +1,14 @@
 from itertools import islice
-import FriendlyAI.CachexLogic
+import FriendlyAI.CachexBoard
 import FriendlyAI.CachexGame
 from FriendlyAI.CachexGame import CachexGame
 # import FriendlyAI.CachexNNet
 import numpy as np
-from FriendlyAI.utils import dotdict
 # from NNet import NNetWrapper as NNet
 import FriendlyAI.MCTS
 from FriendlyAI.MCTS import MCTS
 
-from FriendlyAI.CachexLogic import Board
+from FriendlyAI.CachexBoard import Board
 
 class Player:
     def __init__(self, player, n):
@@ -25,8 +24,8 @@ class Player:
         self.color = 1 if player == "red" else -1
         self.n = n
         self.g = CachexGame(n, self.color)
-        self.args1 = dotdict({'numMCTSSims': 2000, 'cpuct':1.0})
-        self.mcts = MCTS(self.g, self.args1)
+        self.sim_iter = 2000
+        self.mcts = MCTS(self.g, self.sim_iter)
         self.eval = lambda x: np.argmax(self.mcts.getActionProb(x, temp=0))
 
     def action(self):

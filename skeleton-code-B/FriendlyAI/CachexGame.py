@@ -1,14 +1,13 @@
 from itertools import islice #python built-in
 import numpy as np
-from .CachexLogic import *
-from FriendlyAI.Game import Game
+from .CachexBoard import *
 
 # Very small number
 _EPS = 1e-8
 _MAX_REPEAT_STATES = 7
 _MAX_TURNS = 343 
 
-class CachexGame(Game):
+class CachexGame():
     content_lookup = {-1: "B", 0: "-", 1:"R"}
     
     @staticmethod
