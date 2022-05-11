@@ -1,8 +1,8 @@
 from itertools import islice
 import logging
 import math
-from CachexGame import CachexGame
-from CachexLogic import Board
+from FriendlyAI.CachexGame import CachexGame
+from FriendlyAI.CachexLogic import Board
 import numpy as np
 
 

@@ -46,6 +46,7 @@ _MAX_TURNS = 343
 class Board():
     def __init__(self, n, color):
         self.n = n
+        self.color = color
         self.turn = 1 if color == 1 else 2
         self._data = zeros((n, n), dtype=int)
         self.history = collections.Counter({self._data.tobytes() : 1})
@@ -158,7 +159,7 @@ class Board():
         self.history[self.digest()] += 1
 
     def deep_copy(self):
-        b = Board(self.n)
+        b = Board(self.n, self.color)
         b.turn = self.turn
         b._data = np.copy(self._data)
         b.history = self.history.copy()

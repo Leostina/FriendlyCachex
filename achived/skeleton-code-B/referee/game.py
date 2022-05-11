@@ -217,10 +217,9 @@ class Game:
         # Validate action types/forms
         atype, *aargs = action
         action_type = (atype, *(type(arg) for arg in aargs))
-        # print("DEBUG: action ", action)
         if not isinstance(atype, str) or action_type not in _ACTION_TYPES:
             self._illegal_action(action,
-                f"Action does not exist or is not well formed. "
+                f"Action does not exist or is not well formed."
             )
 
         # Validate/apply action based on type

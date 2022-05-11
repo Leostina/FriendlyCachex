@@ -1,7 +1,7 @@
 from itertools import islice #python built-in
 import numpy as np
 from .CachexLogic import *
-from Game import Game
+from FriendlyAI.Game import Game
 
 # Very small number
 _EPS = 1e-8
@@ -15,9 +15,9 @@ class CachexGame(Game):
     def getPieceContent(piece):
         return CachexGame.content_lookup[piece]
 
-    def getInitBoard(self, color):
+    def getInitBoard(self, n, color):
         # return the board at init
-        board = Board(self.n)
+        board = Board(self.n, color)
         return board
 
     def __init__(self, n, color):
