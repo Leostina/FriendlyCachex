@@ -22,6 +22,7 @@ class CachexGame(Game):
 
     def __init__(self, n, color):
         self.n = n
+        self.color = color
         self.board = self.getInitBoard(n, color)
 
     def getBoardSize(self):
@@ -52,14 +53,12 @@ class CachexGame(Game):
         return np.array(moves)
             
     def getGameEnded(self, board:Board, player):
-        # return 0 if not ended, 1 if player 1 won, -1 if player 1 lost, small non-zero val for draw
-        # player = 1
-        # dfs
 
         # draw?
         if board.turn >= _MAX_TURNS or any(np.array(list(board.history.values()))>=_MAX_REPEAT_STATES):
             return _EPS
         # winner?
+        
         frontier = [(r,0) for r in range(board.n) if board._data[r, 0] == -player]
         explored = set()
         while (len(frontier)):

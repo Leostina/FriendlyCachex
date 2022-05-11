@@ -18,7 +18,6 @@ class MCTS():
 
     def __init__(self, game, args):
         self.game = game
-        # self.nnet = nnet
         self.args = args
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited
@@ -91,8 +90,7 @@ class MCTS():
 
         if s not in self.Ps:
             # leaf node
-            # !!! Replace the previous network Policy value with 0s
-            #  self.Ps[s], v = self.nnet.predict(board._data)
+            # !!! Replace self.Ps[s], v = self.nnet.predict(board._data)
             self.Ps[s], v = np.array((self.game.n*self.game.n+1 )*[EPS]), np.array([0])
 
             valids = self.game.getValidMoves(board, 1)
@@ -146,7 +144,7 @@ class MCTS():
 
 
         next_s, next_player = self.game.getNextState(board, 1, a)
-        next_s.swap()
+        next_s.swap_pos()
 
         v = self.search(next_s)
 

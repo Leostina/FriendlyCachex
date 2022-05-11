@@ -9,10 +9,10 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "./__main__.py",
+            "program": "./skeleton-code-B/referee",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["./in/sample_input.json"]
+            "args": ["-m","4","FriendlyAI","FriendlyAI"]
         }
     ]
 }
